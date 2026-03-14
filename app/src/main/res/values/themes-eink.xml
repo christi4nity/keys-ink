@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <style name="KeyboardTheme.EInk">
+        <item name="inputViewStyle">@style/InputView</item>
+        <item name="keyboardStyle">@style/Keyboard.EInk</item>
+        <item name="keyboardViewStyle">@style/KeyboardView.EInk</item>
+        <item name="mainKeyboardViewStyle">@style/MainKeyboardView.EInk</item>
+        <item name="moreKeysKeyboardStyle">@style/MoreKeysKeyboard.LXX_Light</item>
+        <item name="moreKeysKeyboardViewStyle">@style/MoreKeysKeyboardView.LXX_Light</item>
+        <item name="functionalTextColor">@color/key_functional_text_color_eink</item>
+        <item name="popupPanelBackgroundColor">@color/background_eink</item>
+        <item name="keyPressedBackgroundColor">@color/key_background_pressed_eink</item>
+        <item name="keyNormalBackgroundColor">@color/key_background_normal_eink</item>
+    </style>
+    <style
+        name="Keyboard.EInk"
+        parent="Keyboard">
+    </style>
+    <style
+        name="KeyboardView.EInk"
+        parent="KeyboardView">
+        <item name="android:background">@color/background_eink</item>
+        <item name="keyBackground">@drawable/btn_keyboard_key_eink</item>
+        <item name="functionalKeyBackground">@drawable/btn_keyboard_key_eink</item>
+        <item name="spacebarBackground">@drawable/btn_keyboard_key_eink</item>
+        <item name="keyTextColor">@color/key_text_color_eink</item>
+        <item name="keyTextInactivatedColor">@color/key_text_inactive_color_eink</item>
+        <item name="keyHintLetterColor">@color/key_hint_letter_color_eink</item>
+        <item name="keyHintLabelColor">@color/key_text_inactive_color_eink</item>
+        <item name="keyShiftedLetterHintInactivatedColor">@color/key_text_inactive_color_eink</item>
+        <item name="keyShiftedLetterHintActivatedColor">@color/key_text_color_eink</item>
+        <item name="keyPreviewTextColor">@color/key_text_color_eink</item>
+        <item name="languageOnSpacebarTextColor">@color/key_text_inactive_color_eink</item>
+    </style>
+    <style
+        name="MainKeyboardView.EInk"
+        parent="KeyboardView.EInk">
+        <item name="keyPreviewBackground">@drawable/keyboard_key_feedback_background</item>
+        <item name="keyPreviewHeight">0dp</item>
+        <item name="keyPreviewWidth">0dp</item>
+        <item name="keyPreviewOffset">0dp</item>
+    </style>
+</resources>

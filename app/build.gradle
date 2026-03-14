@@ -1,0 +1,22 @@
+apply plugin: 'com.android.application'
+
+android {
+    defaultConfig {
+        applicationId "com.keysink.inputmethod"
+        compileSdk 36
+        minSdkVersion 24
+        targetSdkVersion 36
+        versionCode 144
+        versionName "6.3"
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    namespace 'com.keysink.inputmethod'
+}
+
+dependencies {
+}
