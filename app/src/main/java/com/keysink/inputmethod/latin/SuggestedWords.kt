@@ -11,13 +11,13 @@ import com.keysink.inputmethod.latin.common.StringUtils
  * Holds a list of word suggestions and metadata about the current suggestion state.
  */
 class SuggestedWords(
-    val mSuggestedWordInfoList: ArrayList<SuggestedWordInfo>,
-    val mTypedWordInfo: SuggestedWordInfo?,
-    val mTypedWordValid: Boolean,
-    val mWillAutoCorrect: Boolean,
-    val mIsObsoleteSuggestions: Boolean,
-    val mInputStyle: Int,
-    val mSequenceNumber: Int
+    @JvmField val mSuggestedWordInfoList: ArrayList<SuggestedWordInfo>,
+    @JvmField val mTypedWordInfo: SuggestedWordInfo?,
+    @JvmField val mTypedWordValid: Boolean,
+    @JvmField val mWillAutoCorrect: Boolean,
+    @JvmField val mIsObsoleteSuggestions: Boolean,
+    @JvmField val mInputStyle: Int,
+    @JvmField val mSequenceNumber: Int
 ) {
     fun isEmpty(): Boolean = mSuggestedWordInfoList.isEmpty()
 
