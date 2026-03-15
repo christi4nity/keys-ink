@@ -5,8 +5,8 @@
         <item name="keyboardStyle">@style/Keyboard.EInk</item>
         <item name="keyboardViewStyle">@style/KeyboardView.EInk</item>
         <item name="mainKeyboardViewStyle">@style/MainKeyboardView.EInk</item>
-        <item name="moreKeysKeyboardStyle">@style/MoreKeysKeyboard.LXX_Light</item>
-        <item name="moreKeysKeyboardViewStyle">@style/MoreKeysKeyboardView.LXX_Light</item>
+        <item name="moreKeysKeyboardStyle">@style/MoreKeysKeyboard.EInk</item>
+        <item name="moreKeysKeyboardViewStyle">@style/MoreKeysKeyboardView.EInk</item>
         <item name="functionalTextColor">@color/key_functional_text_color_eink</item>
         <item name="popupPanelBackgroundColor">@color/background_eink</item>
         <item name="keyPressedBackgroundColor">@color/key_background_pressed_eink</item>
@@ -15,6 +15,22 @@
     <style
         name="Keyboard.EInk"
         parent="Keyboard">
+        <item name="keyboardBottomPadding">3.5%p</item>
+    </style>
+    <style
+        name="MoreKeysKeyboard.EInk"
+        parent="Keyboard.EInk">
+        <item name="keyboardTopPadding">0%p</item>
+        <item name="keyboardBottomPadding">0%p</item>
+        <item name="horizontalGap">0%p</item>
+    </style>
+    <style
+        name="MoreKeysKeyboardView.EInk"
+        parent="KeyboardView.EInk">
+        <item name="android:background">@color/background_eink</item>
+        <item name="keyBackground">@drawable/btn_keyboard_key_eink</item>
+        <item name="keyTypeface">normal</item>
+        <item name="verticalCorrection">@dimen/config_more_keys_keyboard_vertical_correction</item>
     </style>
     <style
         name="KeyboardView.EInk"
