@@ -23,6 +23,22 @@ import java.util.Collections;
 import java.util.List;
 
 public class ProximityInfo {
+    static {
+        System.loadLibrary("jni_latinime");
+    }
+
+    // JNI native methods — registered by the native library on load.
+    // These must exist even if not called yet, because JNI registration
+    // validates all methods at System.loadLibrary() time.
+    static native long setProximityInfoNative(
+            int displayWidth, int displayHeight, int gridWidth, int gridHeight,
+            int mostCommonKeyWidth, int mostCommonKeyHeight, int[] proximityCharsArray,
+            int keyCount, int[] keyXCoordinates, int[] keyYCoordinates,
+            int[] keyWidths, int[] keyHeights, int[] keyCharCodes,
+            float[] sweetSpotCenterXs, float[] sweetSpotCenterYs, float[] sweetSpotRadii);
+
+    static native void releaseProximityInfoNative(long nativeProximityInfo);
+
     private static final List<Key> EMPTY_KEY_LIST = Collections.emptyList();
 
     private final int mGridWidth;
