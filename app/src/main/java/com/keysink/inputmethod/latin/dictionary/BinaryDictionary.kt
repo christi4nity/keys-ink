@@ -9,6 +9,7 @@ import android.util.Log
 import com.keysink.inputmethod.latin.NgramContext
 import com.keysink.inputmethod.latin.SuggestedWords.SuggestedWordInfo
 import com.keysink.inputmethod.latin.common.ComposedData
+import com.keysink.inputmethod.latin.common.Constants
 import com.keysink.inputmethod.latin.common.NativeSuggestOptions
 import com.keysink.inputmethod.latin.common.StringUtils
 import java.util.Locale
@@ -50,23 +51,19 @@ class BinaryDictionary(
         if (!isValidDictionary) return outResults
 
         val inputPointers = composedData.mInputPointers
-        val inputSize = if (composedData.mIsBatchMode) {
-            inputPointers.getPointerSize()
-        } else {
-            composedData.mTypedWord.length
-        }
-
         val xCoordinates = inputPointers.getXCoordinates()
         val yCoordinates = inputPointers.getYCoordinates()
         val times = inputPointers.getTimes()
         val pointerIds = inputPointers.getPointerIds()
 
-        // Build code point array for the typed word
-        val inputCodePoints = IntArray(MAX_WORD_LENGTH)
-        val codePointCount = composedData.copyCodePointsExceptTrailingSingleQuotesAndReturnCodePointCount(
+        // Build code point array for the typed word.
+        // Pre-fill with NOT_A_CODE (-1) — the native engine treats 0 as a valid code point (NULL),
+        // so trailing zeros would corrupt the trie traversal.
+        val inputCodePoints = IntArray(MAX_WORD_LENGTH) { Constants.NOT_A_CODE }
+        val effectiveInputSize = composedData.copyCodePointsExceptTrailingSingleQuotesAndReturnCodePointCount(
             inputCodePoints
         )
-        val effectiveInputSize = if (codePointCount < 0) 0 else inputSize
+        if (effectiveInputSize < 0) return outResults
 
         // Build suggest options
         val suggestOptions = NativeSuggestOptions()
@@ -88,7 +85,9 @@ class BinaryDictionary(
         val outSpaceIndices = IntArray(MAX_RESULTS)
         val outTypes = IntArray(MAX_RESULTS)
         val outAutoCommitFirstWordConfidence = IntArray(1)
-        val inOutWeightOfLangModelVsSpatialModel = floatArrayOf(weightForLocale)
+        // Pass -1.0f to let the native engine use its own internal calibration
+        // between language model and spatial model scoring.
+        val inOutWeightOfLangModelVsSpatialModel = floatArrayOf(-1.0f)
 
         // Get or create traversal session
         val traverseSession = getOrCreateTraverseSession()
@@ -133,7 +132,6 @@ class BinaryDictionary(
             val word = String(wordCodePoints, 0, wordLen)
             val score = outScores[i]
             val kindAndFlags = outTypes[i]
-
             val prevWordsContext = ngramContext.extractPrevWordsContext()
             outResults.add(
                 SuggestedWordInfo(
@@ -200,6 +198,7 @@ class BinaryDictionary(
         val existing = mDicTraverseSession
         if (existing != null) return existing
         val session = DicTraverseSession.create(mLocale, 0L)
+        session.initSession(mNativeDict, null, 0)
         mDicTraverseSession = session
         return session
     }

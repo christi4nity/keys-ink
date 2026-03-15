@@ -39,6 +39,9 @@ import com.keysink.inputmethod.latin.common.Constants;
 import com.keysink.inputmethod.latin.common.StringUtils;
 import com.keysink.inputmethod.latin.settings.SettingsValues;
 import com.keysink.inputmethod.latin.suggestions.SuggestionStripViewAccessor;
+import com.keysink.inputmethod.keyboard.Key;
+import com.keysink.inputmethod.keyboard.Keyboard;
+import com.keysink.inputmethod.keyboard.KeyboardSwitcher;
 import com.keysink.inputmethod.latin.utils.InputTypeUtils;
 import com.keysink.inputmethod.latin.utils.RecapitalizeStatus;
 import com.keysink.inputmethod.latin.utils.SubtypeLocaleUtils;
@@ -85,6 +88,8 @@ public final class InputLogic {
      */
     public void startInput() {
         mRecapitalizeStatus.disable(); // Do not perform recapitalize until the cursor is moved once
+        mWordComposer.reset();
+        clearSuggestionStrip();
     }
 
     public void clearCaches() {
@@ -312,9 +317,19 @@ public final class InputLogic {
         sendKeyCodePoint(codePoint);
         // Track letters for suggestion generation
         if (Character.isLetter(codePoint)) {
-            mWordComposer.addCodePoint(codePoint,
-                    WordComposer.NOT_A_COORDINATE, WordComposer.NOT_A_COORDINATE);
-            // TODO: requestSuggestionsAsync() — disabled until JNI signatures are fixed
+            // Look up key center coordinates for proximity correction
+            int keyX = WordComposer.NOT_A_COORDINATE;
+            int keyY = WordComposer.NOT_A_COORDINATE;
+            final Keyboard keyboard = KeyboardSwitcher.getInstance().getKeyboard();
+            if (keyboard != null) {
+                final Key key = keyboard.getKey(codePoint);
+                if (key != null) {
+                    keyX = key.getX() + key.getWidth() / 2;
+                    keyY = key.getY() + key.getHeight() / 2;
+                }
+            }
+            mWordComposer.addCodePoint(codePoint, keyX, keyY);
+            requestSuggestionsAsync();
         } else if (mWordComposer.isComposingWord()) {
             mWordComposer.reset();
             clearSuggestionStrip();
@@ -328,11 +343,33 @@ public final class InputLogic {
      */
     private void handleSeparatorEvent(final Event event, final InputTransaction inputTransaction) {
         if (mWordComposer.isComposingWord()) {
+            commitCurrentAutoCorrection();
             mWordComposer.reset();
+            clearSuggestionStrip();
         }
         sendKeyCodePoint(event.mCodePoint);
 
         inputTransaction.requireShiftUpdate(InputTransaction.SHIFT_UPDATE_NOW);
+    }
+
+    /**
+     * If auto-correct is active, replace the typed word with the correction.
+     * Called just before committing a separator (space, punctuation).
+     */
+    private void commitCurrentAutoCorrection() {
+        final SuggestedWords words = mSuggestedWords;
+        if (words == null || words.isEmpty() || !words.mWillAutoCorrect || words.size() < 2) {
+            return;
+        }
+        final String typedWord = mWordComposer.getTypedWord();
+        final String correctedWord = words.getWord(SuggestedWords.INDEX_OF_AUTO_CORRECTION);
+        if (typedWord.isEmpty() || correctedWord.isEmpty()
+                || typedWord.equals(correctedWord)) {
+            return;
+        }
+        // Delete the typed word and replace with the correction
+        mConnection.deleteTextBeforeCursor(typedWord.length());
+        mConnection.commitText(correctedWord, 1);
     }
 
     /**
@@ -355,6 +392,8 @@ public final class InputLogic {
 
         if (mConnection.hasSelection()) {
             mConnection.deleteSelectedText();
+            mWordComposer.reset();
+            clearSuggestionStrip();
         } else {
             final int codePointBeforeCursor = mConnection.getCodePointBeforeCursor();
             if (codePointBeforeCursor == Constants.NOT_A_CODE) {
@@ -362,6 +401,15 @@ public final class InputLogic {
             } else {
                 final int numChars = Character.isSupplementaryCodePoint(codePointBeforeCursor) ? 2 : 1;
                 mConnection.deleteTextBeforeCursor(numChars);
+            }
+            // Update word tracking
+            if (mWordComposer.isComposingWord()) {
+                mWordComposer.deleteLast();
+                if (mWordComposer.isComposingWord()) {
+                    requestSuggestionsAsync();
+                } else {
+                    clearSuggestionStrip();
+                }
             }
         }
     }
@@ -566,13 +614,20 @@ public final class InputLogic {
         if (mSuggest == null || !mWordComposer.isComposingWord()) {
             return;
         }
+        // Get the native ProximityInfo handle from the current keyboard
+        long proximityInfoHandle = 0L;
+        final Keyboard keyboard = KeyboardSwitcher.getInstance().getKeyboard();
+        if (keyboard != null) {
+            proximityInfoHandle = keyboard.getProximityInfoHandle();
+        }
         // Snapshot the composer state for the background thread
         final WordComposer composerSnapshot = new WordComposer(mWordComposer);
+        final long proxInfo = proximityInfoHandle;
         mSuggestionExecutor.execute(() -> {
             final SuggestedWords words = mSuggest.getSuggestedWords(
                     composerSnapshot,
                     NgramContext.EMPTY_PREV_WORDS_INFO,
-                    0L, // no proximity info yet
+                    proxInfo,
                     true // correction enabled
             );
             mSuggestionHandler.post(() -> {

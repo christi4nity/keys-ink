@@ -246,6 +246,7 @@ class WordComposer() {
         const val CAPS_MODE_AUTO_SHIFT_LOCKED = 0x7
 
         /** Sentinel value for unknown touch coordinates. */
-        const val NOT_A_COORDINATE = Int.MIN_VALUE
+        /** Must match NOT_A_COORDINATE in defines.h */
+        const val NOT_A_COORDINATE = -1
     }
 }

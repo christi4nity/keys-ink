@@ -99,7 +99,8 @@ public class Keyboard {
         mIconsSet = params.mIconsSet;
 
         mProximityInfo = new ProximityInfo(params.mGridWidth, params.mGridHeight,
-                mOccupiedWidth, mOccupiedHeight, mSortedKeys);
+                mOccupiedWidth, mOccupiedHeight, mMostCommonKeyWidth, mMostCommonKeyHeight,
+                mSortedKeys);
     }
 
     /**
@@ -164,5 +165,12 @@ public class Keyboard {
         final int adjustedX = Math.max(0, Math.min(x, mOccupiedWidth - 1));
         final int adjustedY = Math.max(0, Math.min(y, mOccupiedHeight - 1));
         return mProximityInfo.getNearestKeys(adjustedX, adjustedY);
+    }
+
+    /**
+     * Returns the native ProximityInfo handle for use by the suggestion engine.
+     */
+    public long getProximityInfoHandle() {
+        return mProximityInfo.getNativeProximityInfo();
     }
 }
