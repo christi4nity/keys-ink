@@ -18,7 +18,9 @@ Key traits: <1MB size, no emoji/GIF/spellcheck/swipe-typing, only VIBRATE permis
 
 - Gradle 9.1.0, AGP 9.0.0, compileSdk/targetSdk 36, minSdk 24
 - Android SDK expected at `~/Library/Android/sdk`
-- No Kotlin (`android.builtInKotlin=false`), no AndroidX (`android.useAndroidX=false`)
+- JDK: `JAVA_HOME="$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home"`
+- No AndroidX (`android.useAndroidX=false`)
+- `v02-suggestions` branch adds Kotlin + NDK (native C++ dictionary engine)
 
 ## Architecture
 
@@ -56,6 +58,16 @@ Adding or modifying a keyboard layout involves a 3-level XML hierarchy:
 Shared key styles live in `key_styles_common.xml`, `key_styles_enter.xml`, `key_styles_actions.xml`, etc.
 
 Locale-specific strings and more-keys are in `KeyboardTextsTable.java` (programmatic, not XML).
+
+## Boox E-Ink Device Constraints (CRITICAL)
+
+These are non-negotiable hardware/firmware limitations of the Boox NoteAir 5C:
+
+1. **No extra views in `input_view.xml`.** The IME must have exactly ONE child view (`MainKeyboardView`). Any additional view — even `visibility="gone"` — crashes the host app. The Android `setCandidatesView` API also crashes. Draw everything on the `MainKeyboardView` canvas.
+
+2. **No `setComposingText()` or `finishComposingText()`.** Boox editors crash on composing text spans. Commit characters directly and track words in memory.
+
+3. **Dictionary JNI calls must be off the main thread.** Use a background `ExecutorService` and post results back via `Handler`.
 
 ## E-Ink Optimizations (Current)
 
