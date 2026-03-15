@@ -30,8 +30,8 @@ import android.view.inputmethod.EditorInfo;
 import com.keysink.inputmethod.event.Event;
 import com.keysink.inputmethod.event.InputTransaction;
 import com.keysink.inputmethod.latin.LatinIME;
-import com.keysink.inputmethod.latin.NgramContext;
 import com.keysink.inputmethod.latin.RichInputConnection;
+import com.keysink.inputmethod.latin.NgramContext;
 import com.keysink.inputmethod.latin.Suggest;
 import com.keysink.inputmethod.latin.SuggestedWords;
 import com.keysink.inputmethod.latin.WordComposer;
@@ -54,13 +54,19 @@ public final class InputLogic {
     public final RichInputConnection mConnection;
     private final RecapitalizeStatus mRecapitalizeStatus = new RecapitalizeStatus();
 
-    // Suggestion pipeline state
-    private WordComposer mWordComposer;
+    // Word tracking for suggestions (no composing text API used)
+    private final WordComposer mWordComposer = new WordComposer();
     private Suggest mSuggest;
-    private SuggestedWords mSuggestedWords = SuggestedWords.EMPTY;
     private SuggestionStripViewAccessor mSuggestionStripViewAccessor;
-    private String mLastComposedWord = "";
-    private boolean mIsAutoCorrected = false;
+    private SuggestedWords mSuggestedWords = SuggestedWords.EMPTY;
+    private final android.os.Handler mSuggestionHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final java.util.concurrent.ExecutorService mSuggestionExecutor =
+            java.util.concurrent.Executors.newSingleThreadExecutor();
+
+    public void initSuggest(final Suggest suggest, final SuggestionStripViewAccessor accessor) {
+        mSuggest = suggest;
+        mSuggestionStripViewAccessor = accessor;
+    }
 
     /**
      * Create a new instance of the input logic.
@@ -73,29 +79,12 @@ public final class InputLogic {
     }
 
     /**
-     * Initializes the suggestion pipeline.
-     * @param suggest the Suggest engine to use for generating suggestions.
-     * @param accessor the accessor for showing/clearing the suggestion strip.
-     */
-    public void initSuggest(final Suggest suggest, final SuggestionStripViewAccessor accessor) {
-        mSuggest = suggest;
-        mWordComposer = new WordComposer();
-        mSuggestionStripViewAccessor = accessor;
-    }
-
-    /**
      * Initializes the input logic for input in an editor.
      *
      * Call this when input starts or restarts in some editor (typically, in onStartInputView).
      */
     public void startInput() {
         mRecapitalizeStatus.disable(); // Do not perform recapitalize until the cursor is moved once
-        if (mWordComposer != null) {
-            mWordComposer.reset();
-        }
-        mSuggestedWords = SuggestedWords.EMPTY;
-        mLastComposedWord = "";
-        mIsAutoCorrected = false;
     }
 
     public void clearCaches() {
@@ -122,10 +111,6 @@ public final class InputLogic {
     public InputTransaction onTextInput(final SettingsValues settingsValues, final Event event) {
         final String rawText = event.getTextToCommit().toString();
         final InputTransaction inputTransaction = new InputTransaction(settingsValues);
-        // Commit any composing word before inserting multi-character text
-        if (mWordComposer != null && mWordComposer.isComposingWord()) {
-            commitComposingWord(settingsValues);
-        }
         final String text = performSpecificTldProcessingOnTextInput(rawText);
         mConnection.commitText(text, 1);
         // Space state must be updated before calling updateShiftState
@@ -314,29 +299,25 @@ public final class InputLogic {
                 || Character.getType(codePoint) == Character.OTHER_SYMBOL) {
             handleSeparatorEvent(event, inputTransaction);
         } else {
-            handleNonSeparatorEvent(event, inputTransaction);
+            handleNonSeparatorEvent(event);
         }
     }
 
     /**
      * Handle a non-separator.
      * @param event The event to handle.
-     * @param inputTransaction The transaction in progress.
      */
-    private void handleNonSeparatorEvent(final Event event,
-            final InputTransaction inputTransaction) {
+    private void handleNonSeparatorEvent(final Event event) {
         final int codePoint = event.mCodePoint;
-        if (mWordComposer != null && Character.isLetter(codePoint)) {
+        sendKeyCodePoint(codePoint);
+        // Track letters for suggestion generation
+        if (Character.isLetter(codePoint)) {
             mWordComposer.addCodePoint(codePoint,
                     WordComposer.NOT_A_COORDINATE, WordComposer.NOT_A_COORDINATE);
-            mConnection.setComposingText(mWordComposer.getTypedWord(), 1);
-            performUpdateSuggestionStrip(inputTransaction.mSettingsValues);
-        } else {
-            // Digits, symbols, and other non-letter characters: commit directly
-            if (mWordComposer != null && mWordComposer.isComposingWord()) {
-                commitComposingWord(inputTransaction.mSettingsValues);
-            }
-            sendKeyCodePoint(codePoint);
+            // TODO: requestSuggestionsAsync() — disabled until JNI signatures are fixed
+        } else if (mWordComposer.isComposingWord()) {
+            mWordComposer.reset();
+            clearSuggestionStrip();
         }
     }
 
@@ -346,8 +327,8 @@ public final class InputLogic {
      * @param inputTransaction The transaction in progress.
      */
     private void handleSeparatorEvent(final Event event, final InputTransaction inputTransaction) {
-        if (mWordComposer != null && mWordComposer.isComposingWord()) {
-            commitComposingWord(inputTransaction.mSettingsValues);
+        if (mWordComposer.isComposingWord()) {
+            mWordComposer.reset();
         }
         sendKeyCodePoint(event.mCodePoint);
 
@@ -372,32 +353,6 @@ public final class InputLogic {
                 ? InputTransaction.SHIFT_UPDATE_LATER : InputTransaction.SHIFT_UPDATE_NOW;
         inputTransaction.requireShiftUpdate(shiftUpdateKind);
 
-        // Case 1: Revert an auto-correction that just happened
-        if (mIsAutoCorrected && mWordComposer != null && mLastComposedWord.length() > 0) {
-            revertAutoCorrection(inputTransaction.mSettingsValues);
-            return;
-        }
-
-        // Case 2: Currently composing a word — delete from the composer
-        if (mWordComposer != null && mWordComposer.isComposingWord()) {
-            mWordComposer.deleteLast();
-            if (mWordComposer.isComposingWord()) {
-                mConnection.setComposingText(mWordComposer.getTypedWord(), 1);
-                performUpdateSuggestionStrip(inputTransaction.mSettingsValues);
-            } else {
-                // Composer is now empty — finish composing
-                mConnection.finishComposingText();
-                // Delete the last remaining character that was in the composing span
-                mConnection.deleteTextBeforeCursor(1);
-                if (mSuggestionStripViewAccessor != null) {
-                    mSuggestionStripViewAccessor.setNeutralSuggestionStrip();
-                }
-                mSuggestedWords = SuggestedWords.EMPTY;
-            }
-            return;
-        }
-
-        // Case 3: Normal backspace — no composing word
         if (mConnection.hasSelection()) {
             mConnection.deleteSelectedText();
         } else {
@@ -605,128 +560,39 @@ public final class InputLogic {
         mConnection.commitText(StringUtils.newSingleCodePointString(codePoint), 1);
     }
 
-    // --------------------------------------------------------------------------------------------
-    // Suggestion pipeline methods
-    // --------------------------------------------------------------------------------------------
+    // --- Async suggestion pipeline ---
 
-    /**
-     * Commits the currently composing word, applying auto-correction if appropriate.
-     *
-     * @param settingsValues the current settings values.
-     */
-    private void commitComposingWord(final SettingsValues settingsValues) {
-        if (mWordComposer == null || !mWordComposer.isComposingWord()) {
+    private void requestSuggestionsAsync() {
+        if (mSuggest == null || !mWordComposer.isComposingWord()) {
             return;
         }
+        // Snapshot the composer state for the background thread
+        final WordComposer composerSnapshot = new WordComposer(mWordComposer);
+        mSuggestionExecutor.execute(() -> {
+            final SuggestedWords words = mSuggest.getSuggestedWords(
+                    composerSnapshot,
+                    NgramContext.EMPTY_PREV_WORDS_INFO,
+                    0L, // no proximity info yet
+                    true // correction enabled
+            );
+            mSuggestionHandler.post(() -> {
+                mSuggestedWords = words;
+                if (mSuggestionStripViewAccessor != null) {
+                    mSuggestionStripViewAccessor.showSuggestionStrip(words);
+                }
+            });
+        });
+    }
 
-        final String typedWord = mWordComposer.getTypedWord();
-
-        if (mSuggestedWords.mWillAutoCorrect && mSuggestedWords.size() > 1) {
-            // Auto-correct: commit the top correction (index 1)
-            final String correctedWord = mSuggestedWords.getWord(1);
-            mConnection.commitText(correctedWord, 1);
-            mLastComposedWord = typedWord;
-            mIsAutoCorrected = true;
-        } else {
-            // No auto-correct: commit the typed word as-is
-            mConnection.commitText(typedWord, 1);
-            mLastComposedWord = "";
-            mIsAutoCorrected = false;
-        }
-
-        mWordComposer.reset();
+    private void clearSuggestionStrip() {
         mSuggestedWords = SuggestedWords.EMPTY;
-
         if (mSuggestionStripViewAccessor != null) {
             mSuggestionStripViewAccessor.setNeutralSuggestionStrip();
         }
     }
 
-    /**
-     * Reverts the last auto-correction: deletes the auto-corrected word and the trailing
-     * separator, then re-enters the originally typed word into the composing state.
-     *
-     * @param settingsValues the current settings values.
-     */
-    private void revertAutoCorrection(final SettingsValues settingsValues) {
-        // Delete the separator that was just committed after the auto-corrected word
-        mConnection.deleteTextBeforeCursor(1);
-        // Delete the auto-corrected word itself
-        final int prevExpectedSelStart = mConnection.getExpectedSelectionStart();
-        // We need to figure out how long the auto-corrected word was. Since we don't store it
-        // directly, we rely on the fact that the cursor is right after the separator, and we
-        // just deleted the separator. Now we need to find the auto-corrected word length.
-        // The safest approach: delete character by character until we've removed the word.
-        // However, for simplicity, we use finishComposingText + commitText approach:
-        // We know the last composed word, so we can reconstruct.
-        // Actually, we already committed the corrected word via commitText, so we need to
-        // delete its length worth of characters.
-        if (mSuggestedWords.size() > 1) {
-            final String correctedWord = mSuggestedWords.getWord(1);
-            mConnection.deleteTextBeforeCursor(correctedWord.length());
-        } else {
-            // Fallback: try to delete typed word length
-            mConnection.deleteTextBeforeCursor(mLastComposedWord.length());
-        }
-
-        // Re-enter the originally typed word as composing text
-        mWordComposer.reset();
-        final String lastWord = mLastComposedWord;
-        for (int i = 0; i < lastWord.length(); i++) {
-            final int cp = lastWord.codePointAt(i);
-            mWordComposer.addCodePoint(cp, WordComposer.NOT_A_COORDINATE, WordComposer.NOT_A_COORDINATE);
-            if (Character.isSupplementaryCodePoint(cp)) {
-                i++; // skip the low surrogate
-            }
-        }
-        mConnection.setComposingText(lastWord, 1);
-        mIsAutoCorrected = false;
-        mLastComposedWord = "";
-
-        performUpdateSuggestionStrip(settingsValues);
-    }
-
-    /**
-     * Updates the suggestion strip based on the current composing word.
-     *
-     * @param settingsValues the current settings values.
-     */
-    private void performUpdateSuggestionStrip(final SettingsValues settingsValues) {
-        if (mSuggest == null || mWordComposer == null || !mWordComposer.isComposingWord()) {
-            if (mSuggestionStripViewAccessor != null) {
-                mSuggestionStripViewAccessor.setNeutralSuggestionStrip();
-            }
-            return;
-        }
-        final NgramContext ngramContext = NgramContext.EMPTY_PREV_WORDS_INFO;
-        final long proximityInfoHandle = 0L; // TODO: wire ProximityInfo later
-        final SuggestedWords suggestedWords = mSuggest.getSuggestedWords(
-                mWordComposer, ngramContext, proximityInfoHandle,
-                settingsValues.mAutoCorrectionEnabled
-        );
-        mSuggestedWords = suggestedWords;
-        if (mSuggestionStripViewAccessor != null) {
-            mSuggestionStripViewAccessor.showSuggestionStrip(suggestedWords);
-        }
-    }
-
-    /**
-     * Called when the user picks a suggestion manually from the suggestion strip.
-     *
-     * @param wordInfo the picked suggestion.
-     * @param settingsValues the current settings values.
-     */
     public void onPickSuggestionManually(final SuggestedWords.SuggestedWordInfo wordInfo,
             final SettingsValues settingsValues) {
-        if (mWordComposer != null && mWordComposer.isComposingWord()) {
-            mConnection.commitText(wordInfo.getWord(), 1);
-            mWordComposer.reset();
-            mSuggestedWords = SuggestedWords.EMPTY;
-            mIsAutoCorrected = false;
-            mLastComposedWord = "";
-            if (mSuggestionStripViewAccessor != null) {
-                mSuggestionStripViewAccessor.setNeutralSuggestionStrip();
-            }
-        }
+        // TODO: implement suggestion picking
     }
 }

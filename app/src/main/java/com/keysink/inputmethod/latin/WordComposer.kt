@@ -17,7 +17,19 @@ import com.keysink.inputmethod.latin.common.InputPointers
  *
  * Not thread-safe.
  */
-class WordComposer {
+class WordComposer() {
+
+    /** Copy constructor — creates a snapshot for background thread use. */
+    constructor(other: WordComposer) : this() {
+        System.arraycopy(other.codePoints, 0, codePoints, 0, other.mCodePointSize.coerceAtMost(MAX_WORD_LENGTH))
+        mCodePointSize = other.mCodePointSize
+        mTypedWordCache = other.mTypedWordCache
+        mIsOnlyFirstCharCapitalized = other.mIsOnlyFirstCharCapitalized
+        mCapsCount = other.mCapsCount
+        mDigitsCount = other.mDigitsCount
+        mCapitalizedMode = other.mCapitalizedMode
+        mIsResumed = other.mIsResumed
+    }
 
     // --------------------------------------------------------------------------------------------
     // State

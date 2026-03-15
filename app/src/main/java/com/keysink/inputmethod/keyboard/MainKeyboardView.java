@@ -53,6 +53,7 @@ import com.keysink.inputmethod.latin.common.Constants;
 import com.keysink.inputmethod.latin.common.CoordinateUtils;
 import com.keysink.inputmethod.latin.utils.LanguageOnSpacebarUtils;
 import com.keysink.inputmethod.latin.utils.LocaleResourceUtils;
+import com.keysink.inputmethod.latin.SuggestedWords;
 import com.keysink.inputmethod.latin.utils.TypefaceUtils;
 
 /**
@@ -60,6 +61,9 @@ import com.keysink.inputmethod.latin.utils.TypefaceUtils;
  */
 public final class MainKeyboardView extends KeyboardView implements MoreKeysPanel.Controller, DrawingProxy {
     private static final String TAG = MainKeyboardView.class.getSimpleName();
+
+    // Suggestion strip state — drawn on canvas, no extra views
+    private SuggestedWords mSuggestedWords = SuggestedWords.EMPTY;
 
     /** Listener for {@link KeyboardActionListener}. */
     private KeyboardActionListener mKeyboardActionListener;
@@ -185,6 +189,14 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
             animator.setTarget(target);
         }
         return animator;
+    }
+
+    public void setSuggestedWords(final SuggestedWords suggestedWords) {
+        mSuggestedWords = suggestedWords;
+    }
+
+    public void clearSuggestions() {
+        mSuggestedWords = SuggestedWords.EMPTY;
     }
 
     private static void cancelAndStartAnimators(final ObjectAnimator animatorToCancel,

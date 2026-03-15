@@ -27,9 +27,6 @@ public class ProximityInfo {
         System.loadLibrary("jni_latinime");
     }
 
-    // JNI native methods — registered by the native library on load.
-    // These must exist even if not called yet, because JNI registration
-    // validates all methods at System.loadLibrary() time.
     static native long setProximityInfoNative(
             int displayWidth, int displayHeight, int gridWidth, int gridHeight,
             int mostCommonKeyWidth, int mostCommonKeyHeight, int[] proximityCharsArray,
