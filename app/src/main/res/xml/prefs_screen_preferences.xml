@@ -23,6 +23,12 @@
         android:defaultValue="true"
         android:persistent="true" />
     <SwitchPreference
+        android:key="pref_auto_correct"
+        android:title="@string/auto_correct"
+        android:summary="@string/auto_correct_summary"
+        android:defaultValue="true"
+        android:persistent="true" />
+    <SwitchPreference
         android:key="pref_show_number_row"
         android:title="@string/show_number_row"
         android:defaultValue="false" />
