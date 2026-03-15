@@ -63,6 +63,8 @@
     <dimen name="config_more_keys_keyboard_left_padding">0dp</dimen>
     <dimen name="config_more_keys_keyboard_right_padding">0dp</dimen>
 
+    <dimen name="config_suggestion_strip_height">40dp</dimen>
+
     <!-- For 5-row keyboard -->
     <!-- config_key_vertical_gap_5row is calculated to match config_key_horizontal_gap (assuming
          the height is based on config_min_keyboard_height which is true except for very small
