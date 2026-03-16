@@ -31,9 +31,18 @@ import com.keysink.inputmethod.event.Event;
 import com.keysink.inputmethod.event.InputTransaction;
 import com.keysink.inputmethod.latin.LatinIME;
 import com.keysink.inputmethod.latin.RichInputConnection;
+import com.keysink.inputmethod.latin.NgramContext;
+import com.keysink.inputmethod.latin.Suggest;
+import com.keysink.inputmethod.latin.SuggestedWords;
+import com.keysink.inputmethod.latin.WordComposer;
 import com.keysink.inputmethod.latin.common.Constants;
 import com.keysink.inputmethod.latin.common.StringUtils;
+import com.keysink.inputmethod.latin.settings.Settings;
 import com.keysink.inputmethod.latin.settings.SettingsValues;
+import com.keysink.inputmethod.latin.suggestions.SuggestionStripViewAccessor;
+import com.keysink.inputmethod.keyboard.Key;
+import com.keysink.inputmethod.keyboard.Keyboard;
+import com.keysink.inputmethod.keyboard.KeyboardSwitcher;
 import com.keysink.inputmethod.latin.utils.InputTypeUtils;
 import com.keysink.inputmethod.latin.utils.RecapitalizeStatus;
 import com.keysink.inputmethod.latin.utils.SubtypeLocaleUtils;
@@ -48,6 +57,20 @@ public final class InputLogic {
     // This has package visibility so it can be accessed from InputLogicHandler.
     public final RichInputConnection mConnection;
     private final RecapitalizeStatus mRecapitalizeStatus = new RecapitalizeStatus();
+
+    // Word tracking for suggestions (no composing text API used)
+    private final WordComposer mWordComposer = new WordComposer();
+    private Suggest mSuggest;
+    private SuggestionStripViewAccessor mSuggestionStripViewAccessor;
+    private SuggestedWords mSuggestedWords = SuggestedWords.EMPTY;
+    private final android.os.Handler mSuggestionHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final java.util.concurrent.ExecutorService mSuggestionExecutor =
+            java.util.concurrent.Executors.newSingleThreadExecutor();
+
+    public void initSuggest(final Suggest suggest, final SuggestionStripViewAccessor accessor) {
+        mSuggest = suggest;
+        mSuggestionStripViewAccessor = accessor;
+    }
 
     /**
      * Create a new instance of the input logic.
@@ -66,6 +89,8 @@ public final class InputLogic {
      */
     public void startInput() {
         mRecapitalizeStatus.disable(); // Do not perform recapitalize until the cursor is moved once
+        mWordComposer.reset();
+        clearSuggestionStrip();
     }
 
     public void clearCaches() {
@@ -289,7 +314,27 @@ public final class InputLogic {
      * @param event The event to handle.
      */
     private void handleNonSeparatorEvent(final Event event) {
-        sendKeyCodePoint(event.mCodePoint);
+        final int codePoint = event.mCodePoint;
+        sendKeyCodePoint(codePoint);
+        // Track letters for suggestion generation
+        if (Character.isLetter(codePoint)) {
+            // Look up key center coordinates for proximity correction
+            int keyX = WordComposer.NOT_A_COORDINATE;
+            int keyY = WordComposer.NOT_A_COORDINATE;
+            final Keyboard keyboard = KeyboardSwitcher.getInstance().getKeyboard();
+            if (keyboard != null) {
+                final Key key = keyboard.getKey(codePoint);
+                if (key != null) {
+                    keyX = key.getX() + key.getWidth() / 2;
+                    keyY = key.getY() + key.getHeight() / 2;
+                }
+            }
+            mWordComposer.addCodePoint(codePoint, keyX, keyY);
+            requestSuggestionsAsync();
+        } else if (mWordComposer.isComposingWord()) {
+            mWordComposer.reset();
+            clearSuggestionStrip();
+        }
     }
 
     /**
@@ -298,6 +343,10 @@ public final class InputLogic {
      * @param inputTransaction The transaction in progress.
      */
     private void handleSeparatorEvent(final Event event, final InputTransaction inputTransaction) {
+        if (mWordComposer.isComposingWord()) {
+            mWordComposer.reset();
+            clearSuggestionStrip();
+        }
         sendKeyCodePoint(event.mCodePoint);
 
         inputTransaction.requireShiftUpdate(InputTransaction.SHIFT_UPDATE_NOW);
@@ -323,6 +372,8 @@ public final class InputLogic {
 
         if (mConnection.hasSelection()) {
             mConnection.deleteSelectedText();
+            mWordComposer.reset();
+            clearSuggestionStrip();
         } else {
             final int codePointBeforeCursor = mConnection.getCodePointBeforeCursor();
             if (codePointBeforeCursor == Constants.NOT_A_CODE) {
@@ -330,6 +381,15 @@ public final class InputLogic {
             } else {
                 final int numChars = Character.isSupplementaryCodePoint(codePointBeforeCursor) ? 2 : 1;
                 mConnection.deleteTextBeforeCursor(numChars);
+            }
+            // Update word tracking
+            if (mWordComposer.isComposingWord()) {
+                mWordComposer.deleteLast();
+                if (mWordComposer.isComposingWord()) {
+                    requestSuggestionsAsync();
+                } else {
+                    clearSuggestionStrip();
+                }
             }
         }
     }
@@ -526,5 +586,63 @@ public final class InputLogic {
         }
 
         mConnection.commitText(StringUtils.newSingleCodePointString(codePoint), 1);
+    }
+
+    // --- Async suggestion pipeline ---
+
+    private void requestSuggestionsAsync() {
+        final SettingsValues currentSettings = Settings.getInstance().getCurrent();
+        if (mSuggest == null || !mWordComposer.isComposingWord()
+                || (currentSettings != null && !currentSettings.mShowSuggestions)) {
+            return;
+        }
+        // Get the native ProximityInfo handle from the current keyboard
+        long proximityInfoHandle = 0L;
+        final Keyboard keyboard = KeyboardSwitcher.getInstance().getKeyboard();
+        if (keyboard != null) {
+            proximityInfoHandle = keyboard.getProximityInfoHandle();
+        }
+        // Snapshot the composer state for the background thread
+        final WordComposer composerSnapshot = new WordComposer(mWordComposer);
+        final long proxInfo = proximityInfoHandle;
+        mSuggestionExecutor.execute(() -> {
+            final SuggestedWords words = mSuggest.getSuggestedWords(
+                    composerSnapshot,
+                    NgramContext.EMPTY_PREV_WORDS_INFO,
+                    proxInfo
+            );
+            mSuggestionHandler.post(() -> {
+                mSuggestedWords = words;
+                if (mSuggestionStripViewAccessor != null) {
+                    mSuggestionStripViewAccessor.showSuggestionStrip(words);
+                }
+            });
+        });
+    }
+
+    private void clearSuggestionStrip() {
+        mSuggestedWords = SuggestedWords.EMPTY;
+        if (mSuggestionStripViewAccessor != null) {
+            mSuggestionStripViewAccessor.setNeutralSuggestionStrip();
+        }
+    }
+
+    public void onPickSuggestionManually(final SuggestedWords.SuggestedWordInfo wordInfo,
+            final SettingsValues settingsValues) {
+        final String typedWord = mWordComposer.getTypedWord();
+        final String pickedWord = wordInfo.getWord();
+
+        // If the picked word differs from what was typed, replace it
+        if (!pickedWord.equals(typedWord) && !typedWord.isEmpty()) {
+            mConnection.deleteTextBeforeCursor(typedWord.length());
+            mConnection.commitText(pickedWord, 1);
+        }
+
+        // Commit a trailing space after the picked word
+        mConnection.commitText(" ", 1);
+
+        // Reset state
+        mWordComposer.reset();
+        clearSuggestionStrip();
     }
 }

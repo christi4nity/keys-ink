@@ -237,6 +237,29 @@ public final class RichInputConnection {
     }
 
     /**
+     * Calls {@link InputConnection#setComposingText(CharSequence, int)}.
+     *
+     * @param text The composing text to set. This replaces the current composing text.
+     * @param newCursorPosition The new cursor position around the text.
+     */
+    public void setComposingText(final CharSequence text, final int newCursorPosition) {
+        if (isConnected()) {
+            mIC.setComposingText(text, newCursorPosition);
+        }
+    }
+
+    /**
+     * Calls {@link InputConnection#finishComposingText()}.
+     *
+     * Tells the editor that the composing text should be committed as-is.
+     */
+    public void finishComposingText() {
+        if (isConnected()) {
+            mIC.finishComposingText();
+        }
+    }
+
+    /**
      * Calls {@link InputConnection#commitText(CharSequence, int)}.
      *
      * @param text The text to commit. This may include styles.
