@@ -13,10 +13,22 @@ android {
             abiFilters 'arm64-v8a', 'armeabi-v7a'
         }
     }
+    signingConfigs {
+        release {
+            def ksFile = rootProject.file('keystore.jks')
+            if (ksFile.exists()) {
+                storeFile ksFile
+                storePassword System.getenv('KEYSTORE_PASSWORD') ?: ''
+                keyAlias System.getenv('KEY_ALIAS') ?: 'keys-ink'
+                keyPassword System.getenv('KEY_PASSWORD') ?: ''
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
     externalNativeBuild {
