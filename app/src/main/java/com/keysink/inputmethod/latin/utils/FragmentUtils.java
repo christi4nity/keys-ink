@@ -26,7 +26,6 @@ import com.keysink.inputmethod.latin.settings.LanguagesSettingsFragment;
 import com.keysink.inputmethod.latin.settings.PreferencesSettingsFragment;
 import com.keysink.inputmethod.latin.settings.SettingsFragment;
 import com.keysink.inputmethod.latin.settings.SingleLanguageSettingsFragment;
-import com.keysink.inputmethod.latin.settings.ThemeSettingsFragment;
 import com.keysink.inputmethod.latin.settings.VoiceInputSettingsFragment;
 
 public class FragmentUtils {
@@ -35,7 +34,6 @@ public class FragmentUtils {
         sLatinImeFragments.add(PreferencesSettingsFragment.class.getName());
         sLatinImeFragments.add(KeyPressSettingsFragment.class.getName());
         sLatinImeFragments.add(AppearanceSettingsFragment.class.getName());
-        sLatinImeFragments.add(ThemeSettingsFragment.class.getName());
         sLatinImeFragments.add(SettingsFragment.class.getName());
         sLatinImeFragments.add(LanguagesSettingsFragment.class.getName());
         sLatinImeFragments.add(SingleLanguageSettingsFragment.class.getName());
