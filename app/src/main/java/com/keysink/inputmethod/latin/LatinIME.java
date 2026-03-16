@@ -294,6 +294,11 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         mSettings.loadSettings(inputAttributes);
         final SettingsValues currentSettingsValues = mSettings.getCurrent();
         AudioAndHapticFeedbackManager.getInstance().onSettingsChanged(currentSettingsValues);
+        // Toggle suggestion strip visibility based on setting
+        final MainKeyboardView keyboardView = mKeyboardSwitcher.getMainKeyboardView();
+        if (keyboardView != null) {
+            keyboardView.setSuggestionStripEnabled(currentSettingsValues.mShowSuggestions);
+        }
     }
 
     @Override

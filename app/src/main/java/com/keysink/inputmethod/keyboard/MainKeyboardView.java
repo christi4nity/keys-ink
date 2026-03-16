@@ -75,6 +75,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
 
     private SuggestedWords mSuggestedWords = SuggestedWords.EMPTY;
     private SuggestionStripView.Listener mSuggestionListener;
+    private boolean mSuggestionStripEnabled = true;
     private final int mSuggestionStripHeight;
     private final Paint mSuggestionPaint;
     private final Paint mSuggestionBoldPaint;
@@ -249,6 +250,15 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         invalidate(0, 0, getWidth(), mSuggestionStripHeight);
     }
 
+    public void setSuggestionStripEnabled(final boolean enabled) {
+        if (mSuggestionStripEnabled == enabled) return;
+        mSuggestionStripEnabled = enabled;
+        final int topPadding = enabled ? mSuggestionStripHeight : 0;
+        setPadding(0, topPadding, 0, 0);
+        requestLayout();
+        invalidate();
+    }
+
     // --- Drawing ---
 
     @Override
@@ -258,6 +268,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
     }
 
     private void drawSuggestionStrip(final Canvas canvas) {
+        if (!mSuggestionStripEnabled) return;
         final int stripHeight = mSuggestionStripHeight;
         if (stripHeight <= 0) return;
 
@@ -352,7 +363,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         }
 
         // Intercept touches in the suggestion strip area
-        if (event.getY() < mSuggestionStripHeight) {
+        if (mSuggestionStripEnabled && event.getY() < mSuggestionStripHeight) {
             if (event.getActionMasked() == MotionEvent.ACTION_UP) {
                 handleSuggestionStripTap(event.getX());
             }
