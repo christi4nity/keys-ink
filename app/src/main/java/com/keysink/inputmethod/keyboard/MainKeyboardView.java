@@ -27,6 +27,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
+import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
@@ -105,6 +106,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
             }
         }
     };
+    private final Paint mRecordingBackgroundPaint;
     private final Runnable mErrorClearRunnable = new Runnable() {
         @Override
         public void run() {
@@ -185,6 +187,10 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         mSeparatorPaint = new Paint();
         mSeparatorPaint.setColor(Color.LTGRAY);
         mSeparatorPaint.setStrokeWidth(SEPARATOR_HEIGHT_DP * density);
+
+        mRecordingBackgroundPaint = new Paint();
+        mRecordingBackgroundPaint.setColor(Color.BLACK);
+        mRecordingBackgroundPaint.setStyle(Paint.Style.FILL);
 
         final DrawingPreviewPlacerView drawingPreviewPlacerView =
                 new DrawingPreviewPlacerView(context, attrs);
@@ -847,23 +853,29 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         if (key.altCodeWhileTyping()) {
             params.mAnimAlpha = mAltCodeKeyWhileTypingAnimAlpha;
         }
-        // Swap mic icon to stop icon during recording
+        // Swap mic icon to stop icon during recording, with inverted background
         if (key.getCode() == Constants.CODE_VOICE_INPUT
                 && mVoiceInputState == VoiceInputState.RECORDING) {
             final Keyboard keyboard = getKeyboard();
             if (keyboard != null) {
+                // Black background fill
+                final int keyWidth = key.getWidth();
+                final int keyHeight = key.getHeight();
+                canvas.drawRect(0, 0, keyWidth, keyHeight, mRecordingBackgroundPaint);
+
                 final int stopIconId = KeyboardIconsSet.getIconId(
                         KeyboardIconsSet.NAME_STOP_KEY);
                 final Drawable stopIcon = keyboard.mIconsSet.getIconDrawable(stopIconId);
                 if (stopIcon != null) {
+                    // White icon on black background
+                    stopIcon.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN);
                     stopIcon.setAlpha(params.mAnimAlpha);
-                    final int keyWidth = key.getWidth();
-                    final int keyHeight = key.getHeight();
                     final int iconWidth = Math.min(stopIcon.getIntrinsicWidth(), keyWidth);
                     final int iconHeight = stopIcon.getIntrinsicHeight();
                     final int iconX = (keyWidth - iconWidth) / 2;
                     final int iconY = (keyHeight - iconHeight) / 2;
                     drawIcon(canvas, stopIcon, iconX, iconY, iconWidth, iconHeight);
+                    stopIcon.clearColorFilter();
                     return;
                 }
             }
