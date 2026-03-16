@@ -37,7 +37,7 @@ class SuggestTest {
         wordComposer.addCodePoint('o'.code, -1, -1)
 
         val result = suggest.getSuggestedWords(
-            wordComposer, NgramContext.EMPTY_PREV_WORDS_INFO, 0L, true
+            wordComposer, NgramContext.EMPTY_PREV_WORDS_INFO, 0L
         )
 
         assertFalse(result.mWillAutoCorrect, "mWillAutoCorrect should always be false")
@@ -55,7 +55,7 @@ class SuggestTest {
         wordComposer.addCodePoint('t'.code, -1, -1)
 
         val result = suggest.getSuggestedWords(
-            wordComposer, NgramContext.EMPTY_PREV_WORDS_INFO, 0L, true
+            wordComposer, NgramContext.EMPTY_PREV_WORDS_INFO, 0L
         )
 
         assertEquals("cat", result.getWord(0))
@@ -78,7 +78,7 @@ class SuggestTest {
         wordComposer.addCodePoint('o'.code, -1, -1)
 
         val result = suggest.getSuggestedWords(
-            wordComposer, NgramContext.EMPTY_PREV_WORDS_INFO, 0L, true
+            wordComposer, NgramContext.EMPTY_PREV_WORDS_INFO, 0L
         )
 
         assertTrue(result.size() >= 2, "Should have typed word + at least one suggestion")

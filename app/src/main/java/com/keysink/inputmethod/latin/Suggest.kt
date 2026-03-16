@@ -20,14 +20,12 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
      * @param wordComposer          Tracks the word being typed, including touch coordinates.
      * @param ngramContext           Previous-words context for n-gram scoring.
      * @param proximityInfoHandle    Native handle to ProximityInfo for spatial correction.
-     * @param isCorrectionEnabled    Whether auto-correction is allowed.
      * @return a [SuggestedWords] containing the typed word at index 0, followed by suggestions.
      */
     fun getSuggestedWords(
         wordComposer: WordComposer,
         ngramContext: NgramContext,
-        proximityInfoHandle: Long,
-        isCorrectionEnabled: Boolean
+        proximityInfoHandle: Long
     ): SuggestedWords {
         val typedWordString = wordComposer.typedWord
         val composedData = wordComposer.getComposedDataSnapshot()
@@ -44,7 +42,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         SuggestedWordInfo.removeDupsAndTypedWord(typedWordString, rawSuggestions)
 
         // Supplement with edit-distance corrections the native engine may have missed
-        if (isCorrectionEnabled && typedWordString.length >= 2) {
+        if (typedWordString.length >= 2) {
             addEditDistanceCorrections(typedWordString, ngramContext, rawSuggestions)
         }
 
@@ -60,21 +58,6 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         // Check if the typed word is valid in any dictionary
         val typedWordValid = mDictionaryFacilitator.isValidWord(typedWordString)
 
-        // Determine auto-correction
-        var willAutoCorrect = false
-        if (isCorrectionEnabled
-            && rawSuggestions.isNotEmpty()
-            && typedWordString.isNotEmpty()
-            && !typedWordValid
-        ) {
-            val topSuggestion = rawSuggestions[0]
-            if (topSuggestion.mScore > AUTO_CORRECT_THRESHOLD
-                && topSuggestion.isAppropriateForAutoCorrection()
-            ) {
-                willAutoCorrect = true
-            }
-        }
-
         // Assemble final list: typed word at index 0, then suggestions
         val finalSuggestions = ArrayList<SuggestedWordInfo>(rawSuggestions.size + 1)
         finalSuggestions.add(typedWordInfo)
@@ -89,7 +72,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             mSuggestedWordInfoList = finalSuggestions,
             mTypedWordInfo = typedWordInfo,
             mTypedWordValid = typedWordValid,
-            mWillAutoCorrect = willAutoCorrect,
+            mWillAutoCorrect = false,
             mIsObsoleteSuggestions = false,
             mInputStyle = SuggestedWords.INPUT_STYLE_TYPING,
             mSequenceNumber = SuggestedWords.NOT_A_SEQUENCE_NUMBER
@@ -125,7 +108,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
                     corrections.add(SuggestedWordInfo(
                         candidate, prevWordsContext,
                         EDIT_DISTANCE_SCORE,
-                        SuggestedWordInfo.KIND_CORRECTION or SuggestedWordInfo.KIND_FLAG_APPROPRIATE_FOR_AUTO_CORRECTION,
+                        SuggestedWordInfo.KIND_CORRECTION,
                         ""
                     ))
                 }
@@ -191,12 +174,6 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
 
     companion object {
         private const val SESSION_ID_TYPING = 0
-
-        /**
-         * Score threshold above which the top suggestion will trigger auto-correction
-         * when the typed word is not in the dictionary.
-         */
-        private const val AUTO_CORRECT_THRESHOLD = 100_000
 
         /** Score assigned to edit-distance corrections (high enough to rank above native results). */
         private const val EDIT_DISTANCE_SCORE = 200_000

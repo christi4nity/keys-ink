@@ -627,8 +627,7 @@ public final class InputLogic {
             final SuggestedWords words = mSuggest.getSuggestedWords(
                     composerSnapshot,
                     NgramContext.EMPTY_PREV_WORDS_INFO,
-                    proxInfo,
-                    true // correction enabled
+                    proxInfo
             );
             mSuggestionHandler.post(() -> {
                 mSuggestedWords = words;
