@@ -99,6 +99,7 @@ public final class KeyboardLayoutSet {
         EditorInfo mEditorInfo;
         boolean mNoSettingsKey;
         boolean mLanguageSwitchKeyEnabled;
+        boolean mVoiceInputKeyEnabled;
         Subtype mSubtype;
         int mKeyboardThemeId;
         int mKeyboardWidth;
@@ -243,6 +244,11 @@ public final class KeyboardLayoutSet {
 
         public Builder setLanguageSwitchKeyEnabled(final boolean enabled) {
             mParams.mLanguageSwitchKeyEnabled = enabled;
+            return this;
+        }
+
+        public Builder setVoiceInputKeyEnabled(final boolean enabled) {
+            mParams.mVoiceInputKeyEnabled = enabled;
             return this;
         }
 

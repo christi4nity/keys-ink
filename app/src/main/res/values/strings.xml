@@ -143,6 +143,8 @@
     <string name="voice_pref_model_tap_download">Tap to download (~57 MB)</string>
     <string name="voice_pref_model_downloading">Downloading\u2026 <xliff:g id="PERCENT">%d</xliff:g>%%</string>
     <string name="voice_pref_model_tap_retry"><xliff:g id="ERROR">%s</xliff:g>. Tap to retry.</string>
+    <string name="voice_input_enabled">Voice input</string>
+    <string name="voice_input_enabled_summary">Show mic key on keyboard</string>
     <string name="voice_status_recording">Recording</string>
     <string name="voice_status_transcribing">Transcribing</string>
     <string name="voice_error_unavailable">Voice unavailable</string>

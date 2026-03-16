@@ -63,6 +63,7 @@ public final class KeyboardId {
     public final EditorInfo mEditorInfo;
     public final boolean mClobberSettingsKey;
     public final boolean mLanguageSwitchKeyEnabled;
+    public final boolean mVoiceInputKeyEnabled;
     public final String mCustomActionLabel;
     public final boolean mShowMoreKeys;
     public final boolean mShowNumberRow;
@@ -80,6 +81,7 @@ public final class KeyboardId {
         mEditorInfo = params.mEditorInfo;
         mClobberSettingsKey = params.mNoSettingsKey;
         mLanguageSwitchKeyEnabled = params.mLanguageSwitchKeyEnabled;
+        mVoiceInputKeyEnabled = params.mVoiceInputKeyEnabled;
         mCustomActionLabel = (mEditorInfo.actionLabel != null)
                 ? mEditorInfo.actionLabel.toString() : null;
         mShowMoreKeys = params.mShowMoreKeys;
@@ -98,6 +100,7 @@ public final class KeyboardId {
                 id.passwordInput(),
                 id.mClobberSettingsKey,
                 id.mLanguageSwitchKeyEnabled,
+                id.mVoiceInputKeyEnabled,
                 id.isMultiLine(),
                 id.imeAction(),
                 id.mCustomActionLabel,
@@ -119,6 +122,7 @@ public final class KeyboardId {
                 && other.passwordInput() == passwordInput()
                 && other.mClobberSettingsKey == mClobberSettingsKey
                 && other.mLanguageSwitchKeyEnabled == mLanguageSwitchKeyEnabled
+                && other.mVoiceInputKeyEnabled == mVoiceInputKeyEnabled
                 && other.isMultiLine() == isMultiLine()
                 && other.imeAction() == imeAction()
                 && TextUtils.equals(other.mCustomActionLabel, mCustomActionLabel)
@@ -176,7 +180,7 @@ public final class KeyboardId {
 
     @Override
     public String toString() {
-        return String.format(Locale.ROOT, "[%s %s:%s %dx%d +%d %s %s%s%s%s%s%s %s]",
+        return String.format(Locale.ROOT, "[%s %s:%s %dx%d +%d %s %s%s%s%s%s%s%s %s]",
                 elementIdToName(mElementId),
                 mSubtype.getLocale(),
                 mSubtype.getKeyboardLayoutSet(),
@@ -188,6 +192,7 @@ public final class KeyboardId {
                 (mClobberSettingsKey ? " clobberSettingsKey" : ""),
                 (passwordInput() ? " passwordInput" : ""),
                 (mLanguageSwitchKeyEnabled ? " languageSwitchKeyEnabled" : ""),
+                (mVoiceInputKeyEnabled ? " voiceInputKeyEnabled" : ""),
                 (isMultiLine() ? " isMultiLine" : ""),
                 KeyboardTheme.getKeyboardThemeName(mThemeId)
         );
