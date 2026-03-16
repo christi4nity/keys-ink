@@ -1,5 +1,6 @@
 package com.keysink.inputmethod.latin.voice
 
+import com.keysink.inputmethod.R
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -11,20 +12,18 @@ class VoiceInputStateTest {
     }
 
     @Test
-    fun `all five states exist`() {
+    fun `all four states exist`() {
         val states = VoiceInputState.values()
-        assertEquals(5, states.size)
+        assertEquals(4, states.size)
         assertTrue(states.contains(VoiceInputState.IDLE))
-        assertTrue(states.contains(VoiceInputState.NOT_READY))
         assertTrue(states.contains(VoiceInputState.RECORDING))
         assertTrue(states.contains(VoiceInputState.TRANSCRIBING))
         assertTrue(states.contains(VoiceInputState.ERROR))
     }
 
     @Test
-    fun `showsMicIcon returns true for IDLE, NOT_READY, TRANSCRIBING, ERROR`() {
+    fun `showsMicIcon returns true for IDLE, TRANSCRIBING, ERROR`() {
         assertTrue(VoiceInputState.IDLE.showsMicIcon)
-        assertTrue(VoiceInputState.NOT_READY.showsMicIcon)
         assertTrue(VoiceInputState.TRANSCRIBING.showsMicIcon)
         assertTrue(VoiceInputState.ERROR.showsMicIcon)
     }
@@ -35,18 +34,16 @@ class VoiceInputStateTest {
     }
 
     @Test
-    fun `statusText returns correct labels`() {
-        assertNull(VoiceInputState.IDLE.statusText)
-        assertNull(VoiceInputState.NOT_READY.statusText)
-        assertEquals("Recording", VoiceInputState.RECORDING.statusText)
-        assertEquals("Transcribing", VoiceInputState.TRANSCRIBING.statusText)
-        assertNull(VoiceInputState.ERROR.statusText)
+    fun `statusTextResId returns correct resource IDs`() {
+        assertEquals(0, VoiceInputState.IDLE.statusTextResId)
+        assertEquals(R.string.voice_status_recording, VoiceInputState.RECORDING.statusTextResId)
+        assertEquals(R.string.voice_status_transcribing, VoiceInputState.TRANSCRIBING.statusTextResId)
+        assertEquals(0, VoiceInputState.ERROR.statusTextResId)
     }
 
     @Test
     fun `showsAnimatedDots returns true only for RECORDING and TRANSCRIBING`() {
         assertFalse(VoiceInputState.IDLE.showsAnimatedDots)
-        assertFalse(VoiceInputState.NOT_READY.showsAnimatedDots)
         assertTrue(VoiceInputState.RECORDING.showsAnimatedDots)
         assertTrue(VoiceInputState.TRANSCRIBING.showsAnimatedDots)
         assertFalse(VoiceInputState.ERROR.showsAnimatedDots)
@@ -55,7 +52,6 @@ class VoiceInputStateTest {
     @Test
     fun `hidesSuggestions returns true for RECORDING, TRANSCRIBING, ERROR`() {
         assertFalse(VoiceInputState.IDLE.hidesSuggestions)
-        assertFalse(VoiceInputState.NOT_READY.hidesSuggestions)
         assertTrue(VoiceInputState.RECORDING.hidesSuggestions)
         assertTrue(VoiceInputState.TRANSCRIBING.hidesSuggestions)
         assertTrue(VoiceInputState.ERROR.hidesSuggestions)

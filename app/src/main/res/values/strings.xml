@@ -130,4 +130,28 @@
     <string name="change_keyboard">Change keyboard</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="license">License</string>
+
+    <!-- Voice input -->
+    <string name="settings_screen_voice">Voice Input</string>
+    <string name="voice_pref_mic_permission_title">Microphone Permission</string>
+    <string name="voice_pref_mic_permission_not_granted">Not granted</string>
+    <string name="voice_pref_mic_permission_granted">Granted</string>
+    <string name="voice_pref_mic_permission_tap">Tap to grant</string>
+    <string name="voice_pref_model_title">Voice Model</string>
+    <string name="voice_pref_model_not_downloaded">Not downloaded</string>
+    <string name="voice_pref_model_ready">Ready</string>
+    <string name="voice_pref_model_tap_download">Tap to download (~57 MB)</string>
+    <string name="voice_pref_model_downloading">Downloading\u2026 <xliff:g id="PERCENT">%d</xliff:g>%%</string>
+    <string name="voice_pref_model_tap_retry"><xliff:g id="ERROR">%s</xliff:g>. Tap to retry.</string>
+    <string name="voice_status_recording">Recording</string>
+    <string name="voice_status_transcribing">Transcribing</string>
+    <string name="voice_error_unavailable">Voice unavailable</string>
+    <string name="voice_error_model_corrupted">Model corrupted</string>
+    <string name="voice_error_transcription_failed">Transcription failed</string>
+    <string name="voice_error_mic_unavailable">Mic unavailable</string>
+    <string name="voice_error_recording_failed">Recording failed</string>
+    <string name="voice_error_download_http">Download failed (HTTP <xliff:g id="CODE">%d</xliff:g>)</string>
+    <string name="voice_error_download_save">Failed to save model</string>
+    <string name="voice_error_download_network">Download failed. Check your connection.</string>
+    <string name="voice_error_download_generic">Download failed</string>
 </resources>

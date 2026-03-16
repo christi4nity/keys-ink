@@ -9,9 +9,14 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class AudioRecorder {
 
+    enum class RecordingError {
+        MIC_UNAVAILABLE,
+        RECORDING_FAILED
+    }
+
     interface Callback {
         fun onRecordingComplete(audioData: FloatArray)
-        fun onRecordingError(message: String)
+        fun onRecordingError(error: RecordingError)
         fun onMaxDurationReached()
     }
 
@@ -43,7 +48,7 @@ class AudioRecorder {
 
                 if (record.state != AudioRecord.STATE_INITIALIZED) {
                     record.release()
-                    callback.onRecordingError("Mic unavailable")
+                    callback.onRecordingError(RecordingError.MIC_UNAVAILABLE)
                     return@execute
                 }
 
@@ -67,7 +72,7 @@ class AudioRecorder {
                         record.stop()
                         record.release()
                         audioRecord = null
-                        callback.onRecordingError("Recording failed")
+                        callback.onRecordingError(RecordingError.RECORDING_FAILED)
                         return@execute
                     }
                 }
@@ -87,10 +92,10 @@ class AudioRecorder {
 
             } catch (e: SecurityException) {
                 isRecording.set(false)
-                callback.onRecordingError("Mic unavailable")
+                callback.onRecordingError(RecordingError.MIC_UNAVAILABLE)
             } catch (e: Exception) {
                 isRecording.set(false)
-                callback.onRecordingError("Recording failed")
+                callback.onRecordingError(RecordingError.RECORDING_FAILED)
             }
         }
     }

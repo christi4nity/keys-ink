@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
+import com.keysink.inputmethod.R
 import java.io.File
 
 class VoiceInputController(
@@ -58,7 +59,7 @@ class VoiceInputController(
         when (prereq) {
             PrerequisiteResult.READY -> startRecording()
             PrerequisiteResult.NATIVE_UNAVAILABLE -> {
-                transitionTo(State.ERROR, "Voice unavailable")
+                transitionTo(State.ERROR, context.getString(R.string.voice_error_unavailable))
             }
             PrerequisiteResult.NEEDS_PERMISSION,
             PrerequisiteResult.NEEDS_MODEL -> {
@@ -75,7 +76,7 @@ class VoiceInputController(
                     if (success) {
                         beginRecording()
                     } else {
-                        transitionTo(State.ERROR, "Model corrupted")
+                        transitionTo(State.ERROR, context.getString(R.string.voice_error_model_corrupted))
                     }
                 }
             }
@@ -94,7 +95,13 @@ class VoiceInputController(
                 }
             }
 
-            override fun onRecordingError(message: String) {
+            override fun onRecordingError(error: AudioRecorder.RecordingError) {
+                val message = when (error) {
+                    AudioRecorder.RecordingError.MIC_UNAVAILABLE ->
+                        context.getString(R.string.voice_error_mic_unavailable)
+                    AudioRecorder.RecordingError.RECORDING_FAILED ->
+                        context.getString(R.string.voice_error_recording_failed)
+                }
                 mainHandler.post {
                     transitionTo(State.ERROR, message)
                 }
@@ -117,7 +124,7 @@ class VoiceInputController(
                     callback?.onTranscriptionResult(result)
                     transitionTo(State.IDLE)
                 } else {
-                    transitionTo(State.ERROR, "Transcription failed")
+                    transitionTo(State.ERROR, context.getString(R.string.voice_error_transcription_failed))
                 }
             }
         }

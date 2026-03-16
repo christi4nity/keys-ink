@@ -30,7 +30,7 @@
         android:key="screen_appearance" />
     <PreferenceScreen
         android:fragment="com.keysink.inputmethod.latin.settings.VoiceInputSettingsFragment"
-        android:title="Voice Input"
+        android:title="@string/settings_screen_voice"
         android:key="screen_voice" />
     <Preference
         android:title="@string/privacy_policy"

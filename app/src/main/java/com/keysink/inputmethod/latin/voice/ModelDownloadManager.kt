@@ -1,5 +1,7 @@
 package com.keysink.inputmethod.latin.voice
 
+import android.content.Context
+import com.keysink.inputmethod.R
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -26,7 +28,7 @@ class ModelDownloadManager {
     private val isCancelled = AtomicBoolean(false)
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
 
-    fun download(filesDir: File, callback: Callback) {
+    fun download(context: Context, filesDir: File, callback: Callback) {
         isCancelled.set(false)
         callback.onStateChanged(DownloadState.Downloading(0))
 
@@ -47,7 +49,8 @@ class ModelDownloadManager {
                     connection.connect()
                     val responseCode = connection.responseCode
                     if (responseCode != HttpURLConnection.HTTP_OK) {
-                        callback.onStateChanged(DownloadState.Failed("Download failed (HTTP $responseCode)"))
+                        callback.onStateChanged(DownloadState.Failed(
+                            context.getString(R.string.voice_error_download_http, responseCode)))
                         return@execute
                     }
 
@@ -78,7 +81,8 @@ class ModelDownloadManager {
                     val actualHash = sha256(tempFile)
                     if (actualHash != EXPECTED_SHA256) {
                         tempFile.delete()
-                        callback.onStateChanged(DownloadState.Failed("Model corrupted"))
+                        callback.onStateChanged(DownloadState.Failed(
+                            context.getString(R.string.voice_error_model_corrupted)))
                         return@execute
                     }
 
@@ -87,7 +91,8 @@ class ModelDownloadManager {
                         callback.onStateChanged(DownloadState.Complete)
                     } else {
                         tempFile.delete()
-                        callback.onStateChanged(DownloadState.Failed("Failed to save model"))
+                        callback.onStateChanged(DownloadState.Failed(
+                            context.getString(R.string.voice_error_download_save)))
                     }
 
                 } finally {
@@ -95,9 +100,11 @@ class ModelDownloadManager {
                 }
 
             } catch (e: IOException) {
-                callback.onStateChanged(DownloadState.Failed("Download failed. Check your connection."))
+                callback.onStateChanged(DownloadState.Failed(
+                    context.getString(R.string.voice_error_download_network)))
             } catch (e: Exception) {
-                callback.onStateChanged(DownloadState.Failed("Download failed"))
+                callback.onStateChanged(DownloadState.Failed(
+                    context.getString(R.string.voice_error_download_generic)))
             }
         }
     }

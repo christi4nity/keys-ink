@@ -1,14 +1,15 @@
 package com.keysink.inputmethod.latin.voice
 
+import com.keysink.inputmethod.R
+
 enum class VoiceInputState(
     val showsMicIcon: Boolean,
-    val statusText: String?,
+    val statusTextResId: Int,
     val showsAnimatedDots: Boolean,
     val hidesSuggestions: Boolean
 ) {
-    IDLE(showsMicIcon = true, statusText = null, showsAnimatedDots = false, hidesSuggestions = false),
-    NOT_READY(showsMicIcon = true, statusText = null, showsAnimatedDots = false, hidesSuggestions = false),
-    RECORDING(showsMicIcon = false, statusText = "Recording", showsAnimatedDots = true, hidesSuggestions = true),
-    TRANSCRIBING(showsMicIcon = true, statusText = "Transcribing", showsAnimatedDots = true, hidesSuggestions = true),
-    ERROR(showsMicIcon = true, statusText = null, showsAnimatedDots = false, hidesSuggestions = true)
+    IDLE(showsMicIcon = true, statusTextResId = 0, showsAnimatedDots = false, hidesSuggestions = false),
+    RECORDING(showsMicIcon = false, statusTextResId = R.string.voice_status_recording, showsAnimatedDots = true, hidesSuggestions = true),
+    TRANSCRIBING(showsMicIcon = true, statusTextResId = R.string.voice_status_transcribing, showsAnimatedDots = true, hidesSuggestions = true),
+    ERROR(showsMicIcon = true, statusTextResId = 0, showsAnimatedDots = false, hidesSuggestions = true)
 }

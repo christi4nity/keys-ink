@@ -389,8 +389,9 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
             final float textWidth = mSuggestionPaint.measureText(mVoiceErrorMessage);
             canvas.drawText(mVoiceErrorMessage, (width - textWidth) / 2f, textY, mSuggestionPaint);
         } else {
-            final String statusText = mVoiceInputState.getStatusText();
-            if (statusText != null) {
+            final int statusResId = mVoiceInputState.getStatusTextResId();
+            if (statusResId != 0) {
+                final String statusText = getContext().getString(statusResId);
                 final String dots;
                 switch (mDotAnimationCounter) {
                     case 0: dots = "."; break;
