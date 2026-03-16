@@ -319,6 +319,14 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
             mDotAnimationHandler.postDelayed(mErrorClearRunnable, 3000);
         }
 
+        // Show strip area for voice status even when suggestions are disabled
+        if (!mSuggestionStripEnabled) {
+            final boolean needsStrip = state.getHidesSuggestions();
+            final int topPadding = needsStrip ? mSuggestionStripHeight : 0;
+            setPadding(0, topPadding, 0, mKeyboardBottomPadding);
+            requestLayout();
+        }
+
         // Invalidate the suggestion strip for status text
         invalidate(0, 0, getWidth(), mSuggestionStripHeight);
 
@@ -341,7 +349,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
     }
 
     private void drawSuggestionStrip(final Canvas canvas) {
-        if (!mSuggestionStripEnabled) return;
+        if (!mSuggestionStripEnabled && !mVoiceInputState.getHidesSuggestions()) return;
         final int stripHeight = mSuggestionStripHeight;
         if (stripHeight <= 0) return;
 
