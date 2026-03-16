@@ -104,3 +104,6 @@ include $(LOCAL_PATH)/CleanupNativeFileList.mk
 
 #################### Unit test on target environment
 #include $(LOCAL_PATH)/TargetUnitTests.mk
+
+#################### Whisper JNI (voice input)
+include $(LOCAL_PATH)/whisper/Android.mk
