@@ -896,7 +896,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     // Implementation of {@link SuggestionStripView.Listener}.
     @Override
     public void pickSuggestionManually(final SuggestedWords.SuggestedWordInfo wordInfo) {
-        // TODO: wire to InputLogic
+        mInputLogic.onPickSuggestionManually(wordInfo, Settings.getInstance().getCurrent());
     }
 
     // Implementation of {@link SuggestionStripViewAccessor}.

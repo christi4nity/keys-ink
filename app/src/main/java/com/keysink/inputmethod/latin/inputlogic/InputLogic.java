@@ -626,6 +626,20 @@ public final class InputLogic {
 
     public void onPickSuggestionManually(final SuggestedWords.SuggestedWordInfo wordInfo,
             final SettingsValues settingsValues) {
-        // TODO: implement suggestion picking
+        final String typedWord = mWordComposer.getTypedWord();
+        final String pickedWord = wordInfo.getWord();
+
+        // If the picked word differs from what was typed, replace it
+        if (!pickedWord.equals(typedWord) && !typedWord.isEmpty()) {
+            mConnection.deleteTextBeforeCursor(typedWord.length());
+            mConnection.commitText(pickedWord, 1);
+        }
+
+        // Commit a trailing space after the picked word
+        mConnection.commitText(" ", 1);
+
+        // Reset state
+        mWordComposer.reset();
+        clearSuggestionStrip();
     }
 }
