@@ -107,6 +107,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         }
     };
     private final Paint mRecordingBackgroundPaint;
+    private final float mRecordingCornerRadius;
     private final Runnable mErrorClearRunnable = new Runnable() {
         @Override
         public void run() {
@@ -191,6 +192,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         mRecordingBackgroundPaint = new Paint();
         mRecordingBackgroundPaint.setColor(Color.BLACK);
         mRecordingBackgroundPaint.setStyle(Paint.Style.FILL);
+        mRecordingCornerRadius = 4f * density;
 
         final DrawingPreviewPlacerView drawingPreviewPlacerView =
                 new DrawingPreviewPlacerView(context, attrs);
@@ -858,10 +860,12 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
                 && mVoiceInputState == VoiceInputState.RECORDING) {
             final Keyboard keyboard = getKeyboard();
             if (keyboard != null) {
-                // Black background fill
+                // Black background fill with rounded corners matching key shape
                 final int keyWidth = key.getWidth();
                 final int keyHeight = key.getHeight();
-                canvas.drawRect(0, 0, keyWidth, keyHeight, mRecordingBackgroundPaint);
+                canvas.drawRoundRect(0, 0, keyWidth, keyHeight,
+                        mRecordingCornerRadius, mRecordingCornerRadius,
+                        mRecordingBackgroundPaint);
 
                 final int stopIconId = KeyboardIconsSet.getIconId(
                         KeyboardIconsSet.NAME_STOP_KEY);
