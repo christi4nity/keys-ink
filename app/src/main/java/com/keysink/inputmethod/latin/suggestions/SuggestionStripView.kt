@@ -44,15 +44,17 @@ class SuggestionStripView @JvmOverloads constructor(
         this.suggestedWords = suggestedWords
         val count = suggestedWords.size()
 
-        if (suggestedWords.mWillAutoCorrect && count > 1) {
-            // Auto-correct: center shows correction, left shows typed
+        // Center: best suggestion if available, otherwise typed word
+        // Left: typed word (when suggestions exist)
+        // Right: 2nd suggestion
+        if (count > 1) {
             centerView.text = suggestedWords.getWord(1)
             leftView.text = suggestedWords.getWord(0)
             rightView.text = if (count > 2) suggestedWords.getWord(2) else ""
         } else {
             centerView.text = if (count > 0) suggestedWords.getWord(0) else ""
-            leftView.text = if (count > 1) suggestedWords.getWord(1) else ""
-            rightView.text = if (count > 2) suggestedWords.getWord(2) else ""
+            leftView.text = ""
+            rightView.text = ""
         }
     }
 
@@ -65,8 +67,8 @@ class SuggestionStripView @JvmOverloads constructor(
 
     override fun onClick(v: View) {
         val index = when (v.id) {
-            R.id.suggestion_center -> if (suggestedWords.mWillAutoCorrect) 1 else 0
-            R.id.suggestion_left -> if (suggestedWords.mWillAutoCorrect) 0 else 1
+            R.id.suggestion_center -> if (suggestedWords.size() > 1) 1 else 0
+            R.id.suggestion_left -> 0
             R.id.suggestion_right -> 2
             else -> return
         }
