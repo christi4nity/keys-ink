@@ -241,6 +241,9 @@ public final class InputLogic {
                 sendDownUpKeyEvent(KeyEvent.KEYCODE_ENTER, KeyEvent.META_SHIFT_ON);
                 // Shift + Enter is not supported in all devices
                 break;
+            case Constants.CODE_VOICE_INPUT:
+                mLatinIME.onVoiceInputKeyPressed();
+                break;
             default:
                 throw new RuntimeException("Unknown key code : " + event.mKeyCode);
         }

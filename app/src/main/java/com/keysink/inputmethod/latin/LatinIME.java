@@ -75,6 +75,8 @@ import com.keysink.inputmethod.latin.utils.ApplicationUtils;
 import com.keysink.inputmethod.latin.utils.LeakGuardHandlerWrapper;
 import com.keysink.inputmethod.latin.utils.ResourceUtils;
 import com.keysink.inputmethod.latin.utils.ViewLayoutUtils;
+import com.keysink.inputmethod.latin.voice.VoiceInputController;
+import com.keysink.inputmethod.latin.voice.VoiceInputState;
 
 /**
  * Input method implementation for Qwerty'ish keyboard.
@@ -105,6 +107,8 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     private SuggestionStripView mSuggestionStripView;
     private DictionaryFacilitatorImpl mDictionaryFacilitator;
     private Suggest mSuggest;
+
+    private VoiceInputController mVoiceInputController;
 
     private AlertDialog mOptionsDialog;
 
@@ -281,6 +285,40 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         mSuggest = new Suggest(mDictionaryFacilitator);
         mInputLogic.initSuggest(mSuggest, this);
 
+        // Initialize voice input
+        mVoiceInputController = new VoiceInputController(this, getFilesDir());
+        mVoiceInputController.setCallback(new VoiceInputController.Callback() {
+            @Override
+            public void onStateChanged(final VoiceInputState state, final String errorMessage) {
+                final MainKeyboardView keyboardView = mKeyboardSwitcher.getMainKeyboardView();
+                if (keyboardView != null) {
+                    keyboardView.setVoiceInputState(state, errorMessage);
+                }
+            }
+
+            @Override
+            public void onTranscriptionResult(final String text) {
+                mInputLogic.mConnection.commitText(text + " ", 1);
+            }
+
+            @Override
+            public void launchVoiceSettings() {
+                requestHideSelf(0);
+                final MainKeyboardView mainKeyboardView = mKeyboardSwitcher.getMainKeyboardView();
+                if (mainKeyboardView != null) {
+                    mainKeyboardView.closing();
+                }
+                final Intent intent = new Intent();
+                intent.setClass(LatinIME.this, SettingsActivity.class);
+                intent.putExtra(android.preference.PreferenceActivity.EXTRA_SHOW_FRAGMENT,
+                        "com.keysink.inputmethod.latin.settings.VoiceInputSettingsFragment");
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                        | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(intent);
+            }
+        });
+
         // Register to receive ringer mode change.
         final IntentFilter filter = new IntentFilter();
         filter.addAction(AudioManager.RINGER_MODE_CHANGED_ACTION);
@@ -303,6 +341,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     @Override
     public void onDestroy() {
+        if (mVoiceInputController != null) {
+            mVoiceInputController.destroy();
+        }
         if (mDictionaryFacilitator != null) {
             mDictionaryFacilitator.closeDictionaries();
         }
@@ -486,6 +527,10 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
             // a keyboard layout set doesn't get reloaded in this method.
             switcher.resetKeyboardStateToAlphabet(getCurrentAutoCapsState(),
                     getCurrentRecapitalizeState());
+        }
+
+        if (mVoiceInputController != null) {
+            mVoiceInputController.onStartInputView();
         }
 
         if (TRACE) Debug.startMethodTracing("/data/trace/latinime");
@@ -918,6 +963,12 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         final MainKeyboardView keyboardView = mKeyboardSwitcher.getMainKeyboardView();
         if (keyboardView != null) {
             keyboardView.clearSuggestions();
+        }
+    }
+
+    public void onVoiceInputKeyPressed() {
+        if (mVoiceInputController != null) {
+            mVoiceInputController.onMicKeyPressed();
         }
     }
 
