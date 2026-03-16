@@ -29,9 +29,18 @@ android {
             useLegacyPackaging = true
         }
     }
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+        }
+        unitTests.returnDefaultValues = true
+    }
     namespace 'com.keysink.inputmethod'
 }
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testImplementation 'org.mockito:mockito-core:5.15.2'
+    testImplementation 'org.mockito.kotlin:mockito-kotlin:5.4.0'
 }
