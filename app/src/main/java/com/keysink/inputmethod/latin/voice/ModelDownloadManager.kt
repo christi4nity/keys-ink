@@ -113,10 +113,10 @@ class ModelDownloadManager {
 
     companion object {
         const val DOWNLOAD_URL =
-            "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin"
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en-q5_1.bin"
 
         const val EXPECTED_SHA256 =
-            "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002"
+            "4baf70dd0d7c4247ba2b81fafd9c01005ac77c2f9ef064e00dcf195d0e2fdd2f"
 
         fun getModelFile(filesDir: File): File {
             return File(filesDir, "${WhisperEngine.WHISPER_DIR}/${WhisperEngine.MODEL_FILE_NAME}")

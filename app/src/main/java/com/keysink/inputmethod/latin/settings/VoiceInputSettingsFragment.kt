@@ -50,7 +50,7 @@ class VoiceInputSettingsFragment : SubScreenFragment() {
     private fun updateModelStatus() {
         val filesDir = activity?.filesDir ?: return
         val downloaded = ModelDownloadManager.isModelDownloaded(filesDir)
-        modelPref?.summary = if (downloaded) "Ready" else "Tap to download (~142 MB)"
+        modelPref?.summary = if (downloaded) "Ready" else "Tap to download (~57 MB)"
     }
 
     private fun requestMicPermission() {
@@ -89,7 +89,7 @@ class VoiceInputSettingsFragment : SubScreenFragment() {
                             modelPref?.summary = "${state.message}. Tap to retry."
                         }
                         is ModelDownloadManager.DownloadState.NotDownloaded -> {
-                            modelPref?.summary = "Tap to download (~142 MB)"
+                            modelPref?.summary = "Tap to download (~57 MB)"
                         }
                     }
                 }

@@ -9,7 +9,7 @@ class ModelDownloadManagerTest {
     @Test
     fun `DOWNLOAD_URL points to huggingface`() {
         assertTrue(ModelDownloadManager.DOWNLOAD_URL.contains("huggingface.co"))
-        assertTrue(ModelDownloadManager.DOWNLOAD_URL.contains("ggml-base.en.bin"))
+        assertTrue(ModelDownloadManager.DOWNLOAD_URL.contains("ggml-base.en"))
     }
 
     @Test
@@ -23,7 +23,7 @@ class ModelDownloadManagerTest {
         val filesDir = File("/data/data/com.keysink.inputmethod/files")
         val modelFile = ModelDownloadManager.getModelFile(filesDir)
         assertEquals(
-            "/data/data/com.keysink.inputmethod/files/whisper/ggml-base.en.bin",
+            "/data/data/com.keysink.inputmethod/files/whisper/ggml-base.en-q5_1.bin",
             modelFile.path
         )
     }

@@ -18,7 +18,7 @@ class WhisperEngineTest {
 
     @Test
     fun `MODEL_FILE_NAME is correct`() {
-        assertEquals("ggml-base.en.bin", WhisperEngine.MODEL_FILE_NAME)
+        assertEquals("ggml-base.en-q5_1.bin", WhisperEngine.MODEL_FILE_NAME)
     }
 
     @Test

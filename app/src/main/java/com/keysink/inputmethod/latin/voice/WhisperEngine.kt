@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 object WhisperEngine {
 
-    const val MODEL_FILE_NAME = "ggml-base.en.bin"
+    const val MODEL_FILE_NAME = "ggml-base.en-q5_1.bin"
     const val WHISPER_DIR = "whisper"
 
     var isAvailable: Boolean = false
