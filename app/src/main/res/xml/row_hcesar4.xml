@@ -35,6 +35,8 @@
         <Key
             latin:keySpec="w"
             latin:moreKeys="!text/morekeys_period" />
+        <include
+            latin:keyboardLayout="@xml/key_mic" />
         <Key
             latin:keyStyle="enterKeyStyle"
             latin:keyWidth="fillRight" />
