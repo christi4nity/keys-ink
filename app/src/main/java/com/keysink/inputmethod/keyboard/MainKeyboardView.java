@@ -59,8 +59,6 @@ import com.keysink.inputmethod.latin.common.Constants;
 import com.keysink.inputmethod.latin.common.CoordinateUtils;
 import com.keysink.inputmethod.latin.utils.LanguageOnSpacebarUtils;
 import com.keysink.inputmethod.latin.utils.LocaleResourceUtils;
-import com.keysink.inputmethod.latin.SuggestedWords;
-import com.keysink.inputmethod.latin.suggestions.SuggestionStripView;
 import com.keysink.inputmethod.latin.utils.TypefaceUtils;
 import com.keysink.inputmethod.latin.voice.VoiceInputState;
 
@@ -73,7 +71,7 @@ import com.keysink.inputmethod.latin.voice.VoiceInputState;
 public final class MainKeyboardView extends KeyboardView implements MoreKeysPanel.Controller, DrawingProxy {
     private static final String TAG = MainKeyboardView.class.getSimpleName();
 
-    // --- Suggestion strip (canvas-drawn, no extra views) ---
+    // --- Voice status strip (canvas-drawn, no extra views) ---
     private static final float SUGGESTION_STRIP_HEIGHT_DP = 36f;
     private static final float SUGGESTION_TEXT_SIZE_SP = 16f;
     private static final float SEPARATOR_HEIGHT_DP = 1f;
@@ -81,13 +79,9 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
     // Bottom padding to prevent the last row from being clipped on Boox e-ink displays
     private static final float KEYBOARD_BOTTOM_PADDING_DP = 5f;
 
-    private SuggestedWords mSuggestedWords = SuggestedWords.EMPTY;
-    private SuggestionStripView.Listener mSuggestionListener;
-    private boolean mSuggestionStripEnabled = true;
     private final int mSuggestionStripHeight;
     private final int mKeyboardBottomPadding;
     private final Paint mSuggestionPaint;
-    private final Paint mSuggestionBoldPaint;
     private final Paint mSeparatorPaint;
     private final float mSuggestionHorizontalPadding;
 
@@ -166,7 +160,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
     public MainKeyboardView(final Context context, final AttributeSet attrs, final int defStyle) {
         super(context, attrs, defStyle);
 
-        // Suggestion strip paint setup
+        // Voice status strip paint setup
         final float density = context.getResources().getDisplayMetrics().density;
         mSuggestionStripHeight = (int)(SUGGESTION_STRIP_HEIGHT_DP * density);
         mKeyboardBottomPadding = (int)(KEYBOARD_BOTTOM_PADDING_DP * density);
@@ -178,10 +172,6 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
                 TypedValue.COMPLEX_UNIT_SP, SUGGESTION_TEXT_SIZE_SP,
                 context.getResources().getDisplayMetrics()));
         mSuggestionPaint.setTypeface(Typeface.DEFAULT);
-
-        mSuggestionBoldPaint = new Paint(mSuggestionPaint);
-        mSuggestionBoldPaint.setTypeface(Typeface.DEFAULT_BOLD);
-        mSuggestionBoldPaint.setColor(Color.BLACK);
 
         mSeparatorPaint = new Paint();
         mSeparatorPaint.setColor(Color.LTGRAY);
@@ -250,10 +240,8 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         mLanguageOnSpacebarHorizontalMargin = (int)getResources().getDimension(
                 R.dimen.config_language_on_spacebar_horizontal_margin);
 
-        // Reserve top padding for the suggestion strip. Set once here so it's stable
-        // across keyboard show/hide cycles (fitsSystemWindows can override setPadding
-        // if called later).
-        setPadding(0, mSuggestionStripHeight, 0, mKeyboardBottomPadding);
+        // No top padding by default — voice status strip adds it dynamically when active
+        setPadding(0, 0, 0, mKeyboardBottomPadding);
     }
 
     private ObjectAnimator loadObjectAnimator(final int resId, final Object target) {
@@ -267,32 +255,6 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
             animator.setTarget(target);
         }
         return animator;
-    }
-
-    // --- Suggestion strip public API ---
-
-    public void setSuggestionStripListener(final SuggestionStripView.Listener listener) {
-        mSuggestionListener = listener;
-    }
-
-    public void setSuggestedWords(final SuggestedWords suggestedWords) {
-        mSuggestedWords = suggestedWords;
-        // Invalidate only the strip area to avoid full keyboard redraw
-        invalidate(0, 0, getWidth(), mSuggestionStripHeight);
-    }
-
-    public void clearSuggestions() {
-        mSuggestedWords = SuggestedWords.EMPTY;
-        invalidate(0, 0, getWidth(), mSuggestionStripHeight);
-    }
-
-    public void setSuggestionStripEnabled(final boolean enabled) {
-        if (mSuggestionStripEnabled == enabled) return;
-        mSuggestionStripEnabled = enabled;
-        final int topPadding = enabled ? mSuggestionStripHeight : 0;
-        setPadding(0, topPadding, 0, mKeyboardBottomPadding);
-        requestLayout();
-        invalidate();
     }
 
     // --- Voice input status ---
@@ -320,13 +282,11 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
             mDotAnimationHandler.postDelayed(mErrorClearRunnable, 3000);
         }
 
-        // Show strip area for voice status even when suggestions are disabled
-        if (!mSuggestionStripEnabled) {
-            final boolean needsStrip = state.getHidesSuggestions();
-            final int topPadding = needsStrip ? mSuggestionStripHeight : 0;
-            setPadding(0, topPadding, 0, mKeyboardBottomPadding);
-            requestLayout();
-        }
+        // Show/hide strip area for voice status
+        final boolean needsStrip = state.getHidesSuggestions();
+        final int topPadding = needsStrip ? mSuggestionStripHeight : 0;
+        setPadding(0, topPadding, 0, mKeyboardBottomPadding);
+        requestLayout();
 
         // Invalidate the suggestion strip for status text
         invalidate(0, 0, getWidth(), mSuggestionStripHeight);
@@ -350,7 +310,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
     }
 
     private void drawSuggestionStrip(final Canvas canvas) {
-        if (!mSuggestionStripEnabled && !mVoiceInputState.getHidesSuggestions()) return;
+        if (!mVoiceInputState.getHidesSuggestions()) return;
         final int stripHeight = mSuggestionStripHeight;
         if (stripHeight <= 0) return;
 
@@ -362,18 +322,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         canvas.clipRect(0, 0, width, stripHeight);
         canvas.drawColor(Color.WHITE);
 
-        // Voice status takes over the strip when active
-        if (mVoiceInputState.getHidesSuggestions()) {
-            drawVoiceStatus(canvas, width, stripHeight);
-            canvas.drawLine(0, stripHeight - 1, width, stripHeight - 1, mSeparatorPaint);
-            canvas.restore();
-            return;
-        }
-
-        final SuggestedWords words = mSuggestedWords;
-        if (words != null && !words.isEmpty() && words.size() > 0) {
-            drawSuggestionWords(canvas, words, width, stripHeight);
-        }
+        drawVoiceStatus(canvas, width, stripHeight);
 
         // Bottom separator line
         canvas.drawLine(0, stripHeight - 1, width, stripHeight - 1, mSeparatorPaint);
@@ -403,84 +352,12 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         }
     }
 
-    private void drawSuggestionWords(final Canvas canvas, final SuggestedWords words,
-            final int width, final int stripHeight) {
-        final int count = words.size();
-
-        // Layout: left = typed word, center (bold) = best suggestion, right = 2nd suggestion.
-        // If only the typed word exists (no suggestions), show it in the center.
-        final String centerWord;
-        final String leftWord;
-        final String rightWord;
-        if (count > 1) {
-            leftWord = words.getWord(0);     // typed word
-            centerWord = words.getWord(1);   // best suggestion
-            rightWord = count > 2 ? words.getWord(2) : "";
-        } else {
-            centerWord = count > 0 ? words.getWord(0) : "";
-            leftWord = "";
-            rightWord = "";
-        }
-
-        // Text baseline: vertically center in strip
-        final float textHeight = -mSuggestionBoldPaint.ascent() + mSuggestionBoldPaint.descent();
-        final float baseline = (stripHeight + textHeight) / 2f - mSuggestionBoldPaint.descent();
-
-        // Three equal columns
-        final float columnWidth = width / 3f;
-        final float padding = mSuggestionHorizontalPadding;
-
-        // Left suggestion
-        if (!leftWord.isEmpty()) {
-            mSuggestionPaint.setTextAlign(Align.LEFT);
-            drawClippedText(canvas, leftWord, padding, baseline,
-                    0, columnWidth, mSuggestionPaint);
-        }
-
-        // Center suggestion (bold)
-        if (!centerWord.isEmpty()) {
-            mSuggestionBoldPaint.setTextAlign(Align.CENTER);
-            drawClippedText(canvas, centerWord, columnWidth + columnWidth / 2f, baseline,
-                    columnWidth, columnWidth * 2f, mSuggestionBoldPaint);
-        }
-
-        // Right suggestion
-        if (!rightWord.isEmpty()) {
-            mSuggestionPaint.setTextAlign(Align.RIGHT);
-            drawClippedText(canvas, rightWord, width - padding, baseline,
-                    columnWidth * 2f, width, mSuggestionPaint);
-        }
-
-        // Vertical dividers between columns
-        final float dividerTop = stripHeight * 0.2f;
-        final float dividerBottom = stripHeight * 0.8f;
-        canvas.drawLine(columnWidth, dividerTop, columnWidth, dividerBottom, mSeparatorPaint);
-        canvas.drawLine(columnWidth * 2f, dividerTop, columnWidth * 2f, dividerBottom, mSeparatorPaint);
-    }
-
-    private void drawClippedText(final Canvas canvas, final String text,
-            final float x, final float y,
-            final float clipLeft, final float clipRight, final Paint paint) {
-        canvas.save();
-        canvas.clipRect(clipLeft, 0, clipRight, mSuggestionStripHeight);
-        canvas.drawText(text, x, y, paint);
-        canvas.restore();
-    }
-
     // --- Touch handling ---
 
     @Override
     public boolean onTouchEvent(final MotionEvent event) {
         if (getKeyboard() == null) {
             return false;
-        }
-
-        // Intercept touches in the suggestion strip area
-        if (mSuggestionStripEnabled && event.getY() < mSuggestionStripHeight) {
-            if (event.getActionMasked() == MotionEvent.ACTION_UP) {
-                handleSuggestionStripTap(event.getX());
-            }
-            return true;
         }
 
         if (mNonDistinctMultitouchHelper != null) {
@@ -493,35 +370,6 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
             return true;
         }
         return processMotionEvent(event);
-    }
-
-    private void handleSuggestionStripTap(final float x) {
-        final SuggestedWords words = mSuggestedWords;
-        if (words == null || words.isEmpty() || mSuggestionListener == null) {
-            return;
-        }
-        final int width = getWidth();
-        final float columnWidth = width / 3f;
-        final int count = words.size();
-
-        // Map tap position to suggestion index.
-        // Layout: left = typed (0), center = best suggestion (1), right = 2nd suggestion (2).
-        // If only typed word exists, center = typed (0).
-        final int index;
-        if (x < columnWidth) {
-            // Left column: typed word
-            index = count > 1 ? 0 : -1;
-        } else if (x < columnWidth * 2f) {
-            // Center column: best suggestion, or typed word if no suggestions
-            index = count > 1 ? 1 : 0;
-        } else {
-            // Right column: 2nd suggestion
-            index = count > 2 ? 2 : -1;
-        }
-
-        if (index >= 0 && index < count) {
-            mSuggestionListener.pickSuggestionManually(words.getInfo(index));
-        }
     }
 
     // --- Keyboard setup ---

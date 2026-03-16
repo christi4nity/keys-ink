@@ -64,13 +64,10 @@ import com.keysink.inputmethod.keyboard.KeyboardSwitcher;
 import com.keysink.inputmethod.keyboard.MainKeyboardView;
 import com.keysink.inputmethod.latin.common.Constants;
 import com.keysink.inputmethod.latin.define.DebugFlags;
-import com.keysink.inputmethod.latin.dictionary.DictionaryFacilitatorImpl;
 import com.keysink.inputmethod.latin.inputlogic.InputLogic;
 import com.keysink.inputmethod.latin.settings.Settings;
 import com.keysink.inputmethod.latin.settings.SettingsActivity;
 import com.keysink.inputmethod.latin.settings.SettingsValues;
-import com.keysink.inputmethod.latin.suggestions.SuggestionStripView;
-import com.keysink.inputmethod.latin.suggestions.SuggestionStripViewAccessor;
 import com.keysink.inputmethod.latin.utils.ApplicationUtils;
 import com.keysink.inputmethod.latin.utils.LeakGuardHandlerWrapper;
 import com.keysink.inputmethod.latin.utils.ResourceUtils;
@@ -82,9 +79,7 @@ import com.keysink.inputmethod.latin.voice.VoiceInputState;
  * Input method implementation for Qwerty'ish keyboard.
  */
 public class LatinIME extends InputMethodService implements KeyboardActionListener,
-        RichInputMethodManager.SubtypeChangedListener,
-        SuggestionStripView.Listener,
-        SuggestionStripViewAccessor {
+        RichInputMethodManager.SubtypeChangedListener {
     static final String TAG = LatinIME.class.getSimpleName();
     private static final boolean TRACE = false;
 
@@ -102,11 +97,6 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     private RichInputMethodManager mRichImm;
     final KeyboardSwitcher mKeyboardSwitcher;
-
-    // Suggestion pipeline
-    private SuggestionStripView mSuggestionStripView;
-    private DictionaryFacilitatorImpl mDictionaryFacilitator;
-    private Suggest mSuggest;
 
     private VoiceInputController mVoiceInputController;
 
@@ -279,12 +269,6 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         // {@link #resetDictionaryFacilitatorIfNecessary()}.
         loadSettings();
 
-        // Initialize suggestion pipeline
-        mDictionaryFacilitator = new DictionaryFacilitatorImpl();
-        mDictionaryFacilitator.resetDictionaries(this, Locale.ENGLISH);
-        mSuggest = new Suggest(mDictionaryFacilitator);
-        mInputLogic.initSuggest(mSuggest, this);
-
         // Initialize voice input
         mVoiceInputController = new VoiceInputController(this, getFilesDir());
         mVoiceInputController.setCallback(new VoiceInputController.Callback() {
@@ -332,20 +316,12 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         mSettings.loadSettings(inputAttributes);
         final SettingsValues currentSettingsValues = mSettings.getCurrent();
         AudioAndHapticFeedbackManager.getInstance().onSettingsChanged(currentSettingsValues);
-        // Toggle suggestion strip visibility based on setting
-        final MainKeyboardView keyboardView = mKeyboardSwitcher.getMainKeyboardView();
-        if (keyboardView != null) {
-            keyboardView.setSuggestionStripEnabled(currentSettingsValues.mShowSuggestions);
-        }
     }
 
     @Override
     public void onDestroy() {
         if (mVoiceInputController != null) {
             mVoiceInputController.destroy();
-        }
-        if (mDictionaryFacilitator != null) {
-            mDictionaryFacilitator.closeDictionaries();
         }
         mSettings.onDestroy();
         unregisterReceiver(mRingerModeChangeReceiver);
@@ -393,10 +369,6 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     public void setInputView(final View view) {
         super.setInputView(view);
         mInputView = view;
-        mSuggestionStripView = view.findViewById(R.id.suggestion_strip);
-        if (mSuggestionStripView != null) {
-            mSuggestionStripView.setListener(this);
-        }
         updateSoftInputWindowLayoutParameters();
         view.requestApplyInsets();
     }
@@ -942,29 +914,6 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
             }
         }
     };
-
-    // Implementation of {@link SuggestionStripView.Listener}.
-    @Override
-    public void pickSuggestionManually(final SuggestedWords.SuggestedWordInfo wordInfo) {
-        mInputLogic.onPickSuggestionManually(wordInfo, Settings.getInstance().getCurrent());
-    }
-
-    // Implementation of {@link SuggestionStripViewAccessor}.
-    @Override
-    public void showSuggestionStrip(final SuggestedWords suggestedWords) {
-        final MainKeyboardView keyboardView = mKeyboardSwitcher.getMainKeyboardView();
-        if (keyboardView != null) {
-            keyboardView.setSuggestedWords(suggestedWords);
-        }
-    }
-
-    @Override
-    public void setNeutralSuggestionStrip() {
-        final MainKeyboardView keyboardView = mKeyboardSwitcher.getMainKeyboardView();
-        if (keyboardView != null) {
-            keyboardView.clearSuggestions();
-        }
-    }
 
     public void onVoiceInputKeyPressed() {
         if (mVoiceInputController != null) {

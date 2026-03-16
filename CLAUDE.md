@@ -20,7 +20,7 @@ Key traits: <1MB size, no emoji/GIF/spellcheck/swipe-typing, only VIBRATE permis
 - Android SDK expected at `~/Library/Android/sdk`
 - JDK: `JAVA_HOME="$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home"`
 - No AndroidX (`android.useAndroidX=false`)
-- `v02-suggestions` branch adds Kotlin + NDK (native C++ dictionary engine)
+- `v02-suggestions-wip` branch preserves suggestion/dictionary code (Kotlin + NDK) for future work
 
 ## Architecture
 
@@ -78,41 +78,25 @@ These are non-negotiable hardware/firmware limitations of the Boox NoteAir 5C:
 
 ## Roadmap
 
-### v0.2 — Autocorrect + Suggestions
-- Re-add AOSP suggestion strip from LatinIME
-- Integrate AOSP dictionaries (Apache 2.0) — English first
-- E-ink styled suggestion bar: plain text, bold center candidate, no animations
-- Auto-capitalize after sentence-ending punctuation
-- Auto-space after picking suggestion, undo on immediate backspace
-
-### v0.3 — Voice Input (Whisper)
-- whisper.cpp via JNI (MIT license), base.en model (~40MB)
-- Mic button in keyboard toolbar
-- Record → transcribe locally → insert text
-- Reference WhisperInput (MIT) for Android integration pattern
-
-### v0.4 — Swipe Typing v1 (Geometric)
-- Detect swipe vs tap by movement threshold
-- Dynamic time warping (DTW) against dictionary ideal paths
-- Filter by first/last character, rank by DTW distance × word frequency
-- Top 3 candidates in suggestion strip
-
 ### v1.0 — Ship
-- Settings: toggle autocorrect/swipe/voice, key height, haptic feedback
+- Settings: toggle voice, key height, haptic feedback
 - GitHub Actions CI (reuse re:ink pattern)
 - Play Store listing
 
-### v2.0 — Neural Swipe (Future)
-- LSTM encoder-decoder trained on synthetic swipe data
-- ONNX Runtime on-device inference
-- Language model re-ranking
+### v2.0 — Autocorrect + Suggestions (Future)
+- Suggestion code preserved on `v02-suggestions-wip` branch
+- Re-add AOSP suggestion strip from LatinIME
+- Integrate AOSP dictionaries (Apache 2.0) — English first
+- E-ink styled suggestion bar: plain text, bold center candidate, no animations
+
+### v3.0 — Swipe Typing (Future)
+- Geometric DTW for v1, neural encoder-decoder for v2
+- No ML dependencies for v1
 
 ## Tech Decisions
 
 - **Existing code stays Java**, new features written in Kotlin
 - **whisper.cpp** via JNI (not TFLite) — better perf, MIT license
-- **AOSP dictionaries** for autocorrect — Apache 2.0, commercially usable
-- **Geometric DTW** for swipe v1 — no ML dependencies
 - All dependencies must be Apache 2.0 or MIT (monetizable, no GPL)
 
 ## ProGuard

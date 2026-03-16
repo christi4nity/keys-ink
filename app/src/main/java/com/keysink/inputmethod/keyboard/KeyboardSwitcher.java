@@ -376,7 +376,6 @@ public final class KeyboardSwitcher implements KeyboardState.SwitchActions {
 
         mKeyboardView = currentInputView.findViewById(R.id.keyboard_view);
         mKeyboardView.setKeyboardActionListener(mLatinIME);
-        mKeyboardView.setSuggestionStripListener(mLatinIME);
         return currentInputView;
     }
 }

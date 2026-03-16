@@ -49,7 +49,6 @@ public class SettingsValues {
     public final boolean mShowNumberRow;
     public final boolean mSpaceSwipeEnabled;
     public final boolean mDeleteSwipeEnabled;
-    public final boolean mShowSuggestions;
     public final boolean mVoiceInputEnabled;
 
     // From the input box
@@ -93,7 +92,6 @@ public class SettingsValues {
         mShowNumberRow = Settings.readShowNumberRow(prefs);
         mSpaceSwipeEnabled = Settings.readSpaceSwipeEnabled(prefs);
         mDeleteSwipeEnabled = Settings.readDeleteSwipeEnabled(prefs);
-        mShowSuggestions = prefs.getBoolean(Settings.PREF_SHOW_SUGGESTIONS, true);
         mVoiceInputEnabled = prefs.getBoolean(Settings.PREF_VOICE_INPUT_ENABLED, true);
     }
 

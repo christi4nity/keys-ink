@@ -167,10 +167,4 @@ public class Keyboard {
         return mProximityInfo.getNearestKeys(adjustedX, adjustedY);
     }
 
-    /**
-     * Returns the native ProximityInfo handle for use by the suggestion engine.
-     */
-    public long getProximityInfoHandle() {
-        return mProximityInfo.getNativeProximityInfo();
-    }
 }
