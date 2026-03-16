@@ -37,6 +37,7 @@ import com.keysink.inputmethod.latin.SuggestedWords;
 import com.keysink.inputmethod.latin.WordComposer;
 import com.keysink.inputmethod.latin.common.Constants;
 import com.keysink.inputmethod.latin.common.StringUtils;
+import com.keysink.inputmethod.latin.settings.Settings;
 import com.keysink.inputmethod.latin.settings.SettingsValues;
 import com.keysink.inputmethod.latin.suggestions.SuggestionStripViewAccessor;
 import com.keysink.inputmethod.keyboard.Key;
@@ -590,7 +591,9 @@ public final class InputLogic {
     // --- Async suggestion pipeline ---
 
     private void requestSuggestionsAsync() {
-        if (mSuggest == null || !mWordComposer.isComposingWord()) {
+        final SettingsValues currentSettings = Settings.getInstance().getCurrent();
+        if (mSuggest == null || !mWordComposer.isComposingWord()
+                || (currentSettings != null && !currentSettings.mShowSuggestions)) {
             return;
         }
         // Get the native ProximityInfo handle from the current keyboard
