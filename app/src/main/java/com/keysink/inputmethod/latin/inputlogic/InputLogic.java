@@ -343,33 +343,12 @@ public final class InputLogic {
      */
     private void handleSeparatorEvent(final Event event, final InputTransaction inputTransaction) {
         if (mWordComposer.isComposingWord()) {
-            commitCurrentAutoCorrection();
             mWordComposer.reset();
             clearSuggestionStrip();
         }
         sendKeyCodePoint(event.mCodePoint);
 
         inputTransaction.requireShiftUpdate(InputTransaction.SHIFT_UPDATE_NOW);
-    }
-
-    /**
-     * If auto-correct is active, replace the typed word with the correction.
-     * Called just before committing a separator (space, punctuation).
-     */
-    private void commitCurrentAutoCorrection() {
-        final SuggestedWords words = mSuggestedWords;
-        if (words == null || words.isEmpty() || !words.mWillAutoCorrect || words.size() < 2) {
-            return;
-        }
-        final String typedWord = mWordComposer.getTypedWord();
-        final String correctedWord = words.getWord(SuggestedWords.INDEX_OF_AUTO_CORRECTION);
-        if (typedWord.isEmpty() || correctedWord.isEmpty()
-                || typedWord.equals(correctedWord)) {
-            return;
-        }
-        // Delete the typed word and replace with the correction
-        mConnection.deleteTextBeforeCursor(typedWord.length());
-        mConnection.commitText(correctedWord, 1);
     }
 
     /**
