@@ -63,6 +63,11 @@ public final class InputLogic {
     private Suggest mSuggest;
     private SuggestionStripViewAccessor mSuggestionStripViewAccessor;
     private SuggestedWords mSuggestedWords = SuggestedWords.EMPTY;
+
+    // Undo state for suggestion picks
+    private String mUndoTypedWord;
+    private String mUndoPickedWord;
+    private boolean mExpectingSelectionUpdateAfterPick;
     private final android.os.Handler mSuggestionHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private final java.util.concurrent.ExecutorService mSuggestionExecutor =
             java.util.concurrent.Executors.newSingleThreadExecutor();
@@ -91,6 +96,7 @@ public final class InputLogic {
         mRecapitalizeStatus.disable(); // Do not perform recapitalize until the cursor is moved once
         mWordComposer.reset();
         clearSuggestionStrip();
+        clearUndoState();
     }
 
     public void clearCaches() {
@@ -133,6 +139,12 @@ public final class InputLogic {
      */
     public void onUpdateSelection(final int newSelStart, final int newSelEnd) {
         mConnection.updateSelection(newSelStart, newSelEnd);
+        // Our own commits trigger selection updates — skip the first one after a pick
+        if (mExpectingSelectionUpdateAfterPick) {
+            mExpectingSelectionUpdateAfterPick = false;
+        } else {
+            clearUndoState();
+        }
     }
 
     public void reloadTextCache() {
@@ -317,6 +329,7 @@ public final class InputLogic {
      * @param event The event to handle.
      */
     private void handleNonSeparatorEvent(final Event event) {
+        clearUndoState();
         final int codePoint = event.mCodePoint;
         sendKeyCodePoint(codePoint);
         // Track letters for suggestion generation
@@ -346,6 +359,7 @@ public final class InputLogic {
      * @param inputTransaction The transaction in progress.
      */
     private void handleSeparatorEvent(final Event event, final InputTransaction inputTransaction) {
+        clearUndoState();
         if (mWordComposer.isComposingWord()) {
             mWordComposer.reset();
             clearSuggestionStrip();
@@ -372,6 +386,25 @@ public final class InputLogic {
                 event.isKeyRepeat() && mConnection.getExpectedSelectionStart() > 0
                 ? InputTransaction.SHIFT_UPDATE_LATER : InputTransaction.SHIFT_UPDATE_NOW;
         inputTransaction.requireShiftUpdate(shiftUpdateKind);
+
+        // Undo suggestion pick: if the user immediately presses backspace after picking a
+        // suggestion, revert to the original typed word instead of character-by-character delete.
+        if (mUndoTypedWord != null && mUndoPickedWord != null && !event.isKeyRepeat()) {
+            final int deleteLength = mUndoPickedWord.length() + 1; // +1 for trailing space
+            mConnection.deleteTextBeforeCursor(deleteLength);
+            mConnection.commitText(mUndoTypedWord, 1);
+            // Restore the composer so the user can continue editing
+            mWordComposer.reset();
+            for (int i = 0; i < mUndoTypedWord.length(); i++) {
+                mWordComposer.addCodePoint(mUndoTypedWord.codePointAt(i),
+                        WordComposer.NOT_A_COORDINATE, WordComposer.NOT_A_COORDINATE);
+            }
+            clearUndoState();
+            requestSuggestionsAsync();
+            return;
+        }
+
+        clearUndoState();
 
         if (mConnection.hasSelection()) {
             mConnection.deleteSelectedText();
@@ -644,6 +677,11 @@ public final class InputLogic {
         final String typedWord = mWordComposer.getTypedWord();
         final String pickedWord = wordInfo.getWord();
 
+        // Save undo state before replacing
+        mUndoTypedWord = typedWord;
+        mUndoPickedWord = pickedWord;
+        mExpectingSelectionUpdateAfterPick = true;
+
         // If the picked word differs from what was typed, replace it
         if (!pickedWord.equals(typedWord) && !typedWord.isEmpty()) {
             mConnection.deleteTextBeforeCursor(typedWord.length());
@@ -656,5 +694,11 @@ public final class InputLogic {
         // Reset state
         mWordComposer.reset();
         clearSuggestionStrip();
+    }
+
+    private void clearUndoState() {
+        mUndoTypedWord = null;
+        mUndoPickedWord = null;
+        mExpectingSelectionUpdateAfterPick = false;
     }
 }
