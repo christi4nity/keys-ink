@@ -73,7 +73,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
     private static final float SEPARATOR_HEIGHT_DP = 1f;
     private static final float SUGGESTION_HORIZONTAL_PADDING_DP = 12f;
     // Bottom padding to prevent the last row from being clipped on Boox e-ink displays
-    private static final float KEYBOARD_BOTTOM_PADDING_DP = 4f;
+    private static final float KEYBOARD_BOTTOM_PADDING_DP = 5f;
 
     private SuggestedWords mSuggestedWords = SuggestedWords.EMPTY;
     private SuggestionStripView.Listener mSuggestionListener;
