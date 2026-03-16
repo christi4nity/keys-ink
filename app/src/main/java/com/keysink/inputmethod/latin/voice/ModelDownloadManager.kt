@@ -115,12 +115,8 @@ class ModelDownloadManager {
         const val DOWNLOAD_URL =
             "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin"
 
-        // TODO: Compute the actual SHA256 hash of ggml-base.en.bin before first real use.
-        // Download manually: curl -L "$DOWNLOAD_URL" -o /tmp/ggml-base.en.bin
-        // Then: sha256sum /tmp/ggml-base.en.bin
-        // Placeholder — will be updated when model is first downloaded.
         const val EXPECTED_SHA256 =
-            "60ed5bc3dd14eea856493d334f93f8c4c6e3032af724c9ee6bdb1a0d8b17ff70"
+            "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002"
 
         fun getModelFile(filesDir: File): File {
             return File(filesDir, "${WhisperEngine.WHISPER_DIR}/${WhisperEngine.MODEL_FILE_NAME}")
