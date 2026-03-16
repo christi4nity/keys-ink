@@ -72,11 +72,14 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
     private static final float SUGGESTION_TEXT_SIZE_SP = 16f;
     private static final float SEPARATOR_HEIGHT_DP = 1f;
     private static final float SUGGESTION_HORIZONTAL_PADDING_DP = 12f;
+    // Bottom padding to prevent the last row from being clipped on Boox e-ink displays
+    private static final float KEYBOARD_BOTTOM_PADDING_DP = 4f;
 
     private SuggestedWords mSuggestedWords = SuggestedWords.EMPTY;
     private SuggestionStripView.Listener mSuggestionListener;
     private boolean mSuggestionStripEnabled = true;
     private final int mSuggestionStripHeight;
+    private final int mKeyboardBottomPadding;
     private final Paint mSuggestionPaint;
     private final Paint mSuggestionBoldPaint;
     private final Paint mSeparatorPaint;
@@ -134,6 +137,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         // Suggestion strip paint setup
         final float density = context.getResources().getDisplayMetrics().density;
         mSuggestionStripHeight = (int)(SUGGESTION_STRIP_HEIGHT_DP * density);
+        mKeyboardBottomPadding = (int)(KEYBOARD_BOTTOM_PADDING_DP * density);
         mSuggestionHorizontalPadding = SUGGESTION_HORIZONTAL_PADDING_DP * density;
 
         mSuggestionPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -217,7 +221,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         // Reserve top padding for the suggestion strip. Set once here so it's stable
         // across keyboard show/hide cycles (fitsSystemWindows can override setPadding
         // if called later).
-        setPadding(0, mSuggestionStripHeight, 0, 0);
+        setPadding(0, mSuggestionStripHeight, 0, mKeyboardBottomPadding);
     }
 
     private ObjectAnimator loadObjectAnimator(final int resId, final Object target) {
@@ -254,7 +258,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         if (mSuggestionStripEnabled == enabled) return;
         mSuggestionStripEnabled = enabled;
         final int topPadding = enabled ? mSuggestionStripHeight : 0;
-        setPadding(0, topPadding, 0, 0);
+        setPadding(0, topPadding, 0, mKeyboardBottomPadding);
         requestLayout();
         invalidate();
     }
