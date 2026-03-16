@@ -106,8 +106,6 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
             }
         }
     };
-    private final Paint mRecordingBackgroundPaint;
-    private final float mRecordingCornerRadius;
     private final Runnable mErrorClearRunnable = new Runnable() {
         @Override
         public void run() {
@@ -188,11 +186,6 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         mSeparatorPaint = new Paint();
         mSeparatorPaint.setColor(Color.LTGRAY);
         mSeparatorPaint.setStrokeWidth(SEPARATOR_HEIGHT_DP * density);
-
-        mRecordingBackgroundPaint = new Paint();
-        mRecordingBackgroundPaint.setColor(Color.BLACK);
-        mRecordingBackgroundPaint.setStyle(Paint.Style.FILL);
-        mRecordingCornerRadius = 4f * density;
 
         final DrawingPreviewPlacerView drawingPreviewPlacerView =
                 new DrawingPreviewPlacerView(context, attrs);
@@ -850,23 +843,32 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
     }
 
     @Override
+    protected void onDrawKeyBackground(final Key key, final Canvas canvas,
+            final Drawable background) {
+        if (key.getCode() == Constants.CODE_VOICE_INPUT
+                && mVoiceInputState == VoiceInputState.RECORDING) {
+            // Tint the key background black during recording
+            background.setColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
+            super.onDrawKeyBackground(key, canvas, background);
+            background.clearColorFilter();
+            return;
+        }
+        super.onDrawKeyBackground(key, canvas, background);
+    }
+
+    @Override
     protected void onDrawKeyTopVisuals(final Key key, final Canvas canvas, final Paint paint,
             final KeyDrawParams params) {
         if (key.altCodeWhileTyping()) {
             params.mAnimAlpha = mAltCodeKeyWhileTypingAnimAlpha;
         }
-        // Swap mic icon to stop icon during recording, with inverted background
+        // Swap mic icon to stop icon during recording
         if (key.getCode() == Constants.CODE_VOICE_INPUT
                 && mVoiceInputState == VoiceInputState.RECORDING) {
             final Keyboard keyboard = getKeyboard();
             if (keyboard != null) {
-                // Black background fill with rounded corners matching key shape
                 final int keyWidth = key.getWidth();
                 final int keyHeight = key.getHeight();
-                canvas.drawRoundRect(0, 0, keyWidth, keyHeight,
-                        mRecordingCornerRadius, mRecordingCornerRadius,
-                        mRecordingBackgroundPaint);
-
                 final int stopIconId = KeyboardIconsSet.getIconId(
                         KeyboardIconsSet.NAME_STOP_KEY);
                 final Drawable stopIcon = keyboard.mIconsSet.getIconDrawable(stopIconId);
