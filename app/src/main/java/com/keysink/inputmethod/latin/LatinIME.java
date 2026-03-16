@@ -298,7 +298,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
             @Override
             public void onTranscriptionResult(final String text) {
-                mInputLogic.mConnection.commitText(text + " ", 1);
+                mInputLogic.commitVoiceTranscription(text);
             }
 
             @Override

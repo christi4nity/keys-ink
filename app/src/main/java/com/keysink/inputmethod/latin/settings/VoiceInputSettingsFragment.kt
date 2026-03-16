@@ -54,7 +54,7 @@ class VoiceInputSettingsFragment : SubScreenFragment() {
     }
 
     private fun requestMicPermission() {
-        activity?.requestPermissions(
+        requestPermissions(
             arrayOf(Manifest.permission.RECORD_AUDIO),
             REQUEST_MIC_PERMISSION
         )

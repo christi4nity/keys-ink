@@ -105,6 +105,16 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
             }
         }
     };
+    private final Runnable mErrorClearRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mVoiceInputState == VoiceInputState.ERROR) {
+                mVoiceInputState = VoiceInputState.IDLE;
+                mVoiceErrorMessage = null;
+                invalidate(0, 0, getWidth(), mSuggestionStripHeight);
+            }
+        }
+    };
 
     /** Listener for {@link KeyboardActionListener}. */
     private KeyboardActionListener mKeyboardActionListener;
@@ -299,19 +309,14 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         mVoiceErrorMessage = errorMessage;
         mDotAnimationCounter = 0;
         mDotAnimationHandler.removeCallbacks(mDotAnimationRunnable);
+        mDotAnimationHandler.removeCallbacks(mErrorClearRunnable);
 
         if (state.getShowsAnimatedDots()) {
             mDotAnimationHandler.postDelayed(mDotAnimationRunnable, 1000);
         }
 
         if (state == VoiceInputState.ERROR && errorMessage != null) {
-            mDotAnimationHandler.postDelayed(() -> {
-                if (mVoiceInputState == VoiceInputState.ERROR) {
-                    mVoiceInputState = VoiceInputState.IDLE;
-                    mVoiceErrorMessage = null;
-                    invalidate(0, 0, getWidth(), mSuggestionStripHeight);
-                }
-            }, 3000);
+            mDotAnimationHandler.postDelayed(mErrorClearRunnable, 3000);
         }
 
         // Invalidate the suggestion strip for status text
@@ -681,6 +686,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         mDotAnimationHandler.removeCallbacks(mDotAnimationRunnable);
+        mDotAnimationHandler.removeCallbacks(mErrorClearRunnable);
         mDrawingPreviewPlacerView.removeAllViews();
     }
 

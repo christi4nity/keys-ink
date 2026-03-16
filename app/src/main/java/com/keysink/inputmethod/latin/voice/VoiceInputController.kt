@@ -143,7 +143,7 @@ class VoiceInputController(
     fun destroy() {
         cancelAndReset()
         audioRecorder.release()
-        WhisperEngine.releaseModel()
+        WhisperEngine.shutdown()
         mainHandler.removeCallbacksAndMessages(null)
     }
 

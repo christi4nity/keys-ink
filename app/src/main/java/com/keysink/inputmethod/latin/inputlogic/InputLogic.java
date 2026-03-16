@@ -542,6 +542,15 @@ public final class InputLogic {
     }
 
     /**
+     * Commit voice transcription text, resetting composer and suggestion state.
+     */
+    public void commitVoiceTranscription(final String text) {
+        mWordComposer.reset();
+        mConnection.commitText(text + " ", 1);
+        clearSuggestionStrip();
+    }
+
+    /**
      * Handle a press on the settings key.
      */
     private void onSettingsKeyPressed() {

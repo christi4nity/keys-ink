@@ -64,6 +64,11 @@ object WhisperEngine {
         }
     }
 
+    fun shutdown() {
+        releaseModel()
+        executor.shutdown()
+    }
+
     @JvmStatic
     private external fun loadModelNative(modelPath: String): Long
 
