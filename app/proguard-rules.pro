@@ -20,3 +20,4 @@
 -keep class com.keysink.inputmethod.latin.settings.SettingsFragment
 -keep class com.keysink.inputmethod.latin.settings.LanguagesSettingsFragment
 -keep class com.keysink.inputmethod.latin.settings.SingleLanguageSettingsFragment
+-keep class com.keysink.inputmethod.latin.settings.VoiceInputSettingsFragment

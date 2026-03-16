@@ -27,6 +27,7 @@ import com.keysink.inputmethod.latin.settings.PreferencesSettingsFragment;
 import com.keysink.inputmethod.latin.settings.SettingsFragment;
 import com.keysink.inputmethod.latin.settings.SingleLanguageSettingsFragment;
 import com.keysink.inputmethod.latin.settings.ThemeSettingsFragment;
+import com.keysink.inputmethod.latin.settings.VoiceInputSettingsFragment;
 
 public class FragmentUtils {
     private static final HashSet<String> sLatinImeFragments = new HashSet<>();
@@ -38,6 +39,7 @@ public class FragmentUtils {
         sLatinImeFragments.add(SettingsFragment.class.getName());
         sLatinImeFragments.add(LanguagesSettingsFragment.class.getName());
         sLatinImeFragments.add(SingleLanguageSettingsFragment.class.getName());
+        sLatinImeFragments.add(VoiceInputSettingsFragment.class.getName());
     }
 
     public static boolean isValidFragment(String fragmentName) {
