@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="voice_model_entries">
+        <item>Tiny (English) — ~31 MB</item>
+        <item>Base (English) — ~57 MB</item>
+        <item>Small (English) — ~181 MB</item>
+    </string-array>
+    <string-array name="voice_model_values">
+        <item>tiny_en</item>
+        <item>base_en</item>
+        <item>small_en</item>
+    </string-array>
+</resources>

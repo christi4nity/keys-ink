@@ -7,31 +7,23 @@ import java.io.File
 class ModelDownloadManagerTest {
 
     @Test
-    fun `DOWNLOAD_URL points to huggingface`() {
-        assertTrue(ModelDownloadManager.DOWNLOAD_URL.contains("huggingface.co"))
-        assertTrue(ModelDownloadManager.DOWNLOAD_URL.contains("ggml-base.en"))
-    }
-
-    @Test
-    fun `EXPECTED_SHA256 is 64 hex characters`() {
-        assertEquals(64, ModelDownloadManager.EXPECTED_SHA256.length)
-        assertTrue(ModelDownloadManager.EXPECTED_SHA256.matches(Regex("[0-9a-f]{64}")))
-    }
-
-    @Test
-    fun `getModelFile returns correct path`() {
+    fun `getModelFile returns correct path for each variant`() {
         val filesDir = File("/data/data/com.keysink.inputmethod/files")
-        val modelFile = ModelDownloadManager.getModelFile(filesDir)
-        assertEquals(
-            "/data/data/com.keysink.inputmethod/files/whisper/ggml-base.en-q5_1.bin",
-            modelFile.path
-        )
+        WhisperModel.entries.forEach { model ->
+            val modelFile = ModelDownloadManager.getModelFile(filesDir, model)
+            assertEquals(
+                "/data/data/com.keysink.inputmethod/files/whisper/${model.fileName}",
+                modelFile.path
+            )
+        }
     }
 
     @Test
     fun `isModelDownloaded returns false when file does not exist`() {
         val fakeDir = File("/nonexistent")
-        assertFalse(ModelDownloadManager.isModelDownloaded(fakeDir))
+        WhisperModel.entries.forEach { model ->
+            assertFalse(ModelDownloadManager.isModelDownloaded(fakeDir, model))
+        }
     }
 
     @Test

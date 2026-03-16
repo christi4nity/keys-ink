@@ -12,7 +12,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
-class ModelDownloadManager {
+class ModelDownloadManager(private val model: WhisperModel) {
 
     sealed class DownloadState {
         object NotDownloaded : DownloadState()
@@ -36,10 +36,10 @@ class ModelDownloadManager {
             try {
                 val modelDir = File(filesDir, WhisperEngine.WHISPER_DIR)
                 modelDir.mkdirs()
-                val modelFile = File(modelDir, WhisperEngine.MODEL_FILE_NAME)
-                val tempFile = File(modelDir, "${WhisperEngine.MODEL_FILE_NAME}.tmp")
+                val modelFile = File(modelDir, model.fileName)
+                val tempFile = File(modelDir, "${model.fileName}.tmp")
 
-                val url = URL(DOWNLOAD_URL)
+                val url = URL(model.downloadUrl)
                 val connection = url.openConnection() as HttpURLConnection
                 connection.connectTimeout = 30_000
                 connection.readTimeout = 30_000
@@ -79,7 +79,7 @@ class ModelDownloadManager {
 
                     // Verify checksum
                     val actualHash = sha256(tempFile)
-                    if (actualHash != EXPECTED_SHA256) {
+                    if (actualHash != model.sha256) {
                         tempFile.delete()
                         callback.onStateChanged(DownloadState.Failed(
                             context.getString(R.string.voice_error_model_corrupted)))
@@ -119,18 +119,12 @@ class ModelDownloadManager {
     }
 
     companion object {
-        const val DOWNLOAD_URL =
-            "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en-q5_1.bin"
-
-        const val EXPECTED_SHA256 =
-            "4baf70dd0d7c4247ba2b81fafd9c01005ac77c2f9ef064e00dcf195d0e2fdd2f"
-
-        fun getModelFile(filesDir: File): File {
-            return File(filesDir, "${WhisperEngine.WHISPER_DIR}/${WhisperEngine.MODEL_FILE_NAME}")
+        fun getModelFile(filesDir: File, model: WhisperModel): File {
+            return File(filesDir, "${WhisperEngine.WHISPER_DIR}/${model.fileName}")
         }
 
-        fun isModelDownloaded(filesDir: File): Boolean {
-            return getModelFile(filesDir).exists()
+        fun isModelDownloaded(filesDir: File, model: WhisperModel): Boolean {
+            return getModelFile(filesDir, model).exists()
         }
 
         private fun sha256(file: File): String {

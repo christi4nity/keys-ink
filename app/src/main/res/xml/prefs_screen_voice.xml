@@ -8,6 +8,14 @@
         android:summary="@string/voice_input_enabled_summary"
         android:defaultValue="true" />
 
+    <ListPreference
+        android:key="pref_voice_model"
+        android:title="@string/voice_pref_model_selector_title"
+        android:entries="@array/voice_model_entries"
+        android:entryValues="@array/voice_model_values"
+        android:defaultValue="base_en"
+        android:dependency="pref_voice_input_enabled" />
+
     <Preference
         android:key="voice_permission_status"
         android:title="@string/voice_pref_mic_permission_title"

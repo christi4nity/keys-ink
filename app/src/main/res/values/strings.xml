@@ -137,10 +137,11 @@
     <string name="voice_pref_mic_permission_not_granted">Not granted</string>
     <string name="voice_pref_mic_permission_granted">Granted</string>
     <string name="voice_pref_mic_permission_tap">Tap to grant</string>
-    <string name="voice_pref_model_title">Voice Model</string>
+    <string name="voice_pref_model_selector_title">Model Size</string>
+    <string name="voice_pref_model_title">Download Model</string>
     <string name="voice_pref_model_not_downloaded">Not downloaded</string>
     <string name="voice_pref_model_ready">Ready</string>
-    <string name="voice_pref_model_tap_download">Tap to download (~57 MB)</string>
+    <string name="voice_pref_model_tap_download">Tap to download (<xliff:g id="SIZE">%s</xliff:g>)</string>
     <string name="voice_pref_model_downloading">Downloading\u2026 <xliff:g id="PERCENT">%d</xliff:g>%%</string>
     <string name="voice_pref_model_tap_retry"><xliff:g id="ERROR">%s</xliff:g>. Tap to retry.</string>
     <string name="voice_input_enabled">Voice input</string>

@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import com.keysink.inputmethod.R
+import com.keysink.inputmethod.compat.PreferenceManagerCompat
+import com.keysink.inputmethod.latin.settings.Settings
 import java.io.File
 
 class VoiceInputController(
@@ -39,6 +41,12 @@ class VoiceInputController(
         this.callback = callback
     }
 
+    private fun getSelectedModel(): WhisperModel {
+        val prefs = PreferenceManagerCompat.getDeviceSharedPreferences(context)
+        val id = prefs.getString(Settings.PREF_VOICE_MODEL, WhisperModel.DEFAULT.id)
+        return WhisperModel.fromId(id ?: WhisperModel.DEFAULT.id)
+    }
+
     fun onMicKeyPressed() {
         when (state) {
             State.IDLE -> handleIdleTap()
@@ -49,10 +57,11 @@ class VoiceInputController(
     }
 
     private fun handleIdleTap() {
+        val selectedModel = getSelectedModel()
         val prereq = checkPrerequisites(
             hasPermission = context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
                 PackageManager.PERMISSION_GRANTED,
-            modelExists = ModelDownloadManager.isModelDownloaded(filesDir),
+            modelExists = ModelDownloadManager.isModelDownloaded(filesDir, selectedModel),
             nativeAvailable = WhisperEngine.isAvailable
         )
 
@@ -69,19 +78,15 @@ class VoiceInputController(
     }
 
     private fun startRecording() {
-        if (!WhisperEngine.isModelLoaded()) {
-            val modelFile = WhisperEngine.getModelFile(filesDir)
-            WhisperEngine.loadModel(modelFile.absolutePath) { success ->
-                mainHandler.post {
-                    if (success) {
-                        beginRecording()
-                    } else {
-                        transitionTo(State.ERROR, context.getString(R.string.voice_error_model_corrupted))
-                    }
+        val selectedModel = getSelectedModel()
+        WhisperEngine.reloadIfNeeded(filesDir, selectedModel) { success ->
+            mainHandler.post {
+                if (success) {
+                    beginRecording()
+                } else {
+                    transitionTo(State.ERROR, context.getString(R.string.voice_error_model_corrupted))
                 }
             }
-        } else {
-            beginRecording()
         }
     }
 

@@ -7,11 +7,13 @@ import java.util.concurrent.atomic.AtomicLong
 
 object WhisperEngine {
 
-    const val MODEL_FILE_NAME = "ggml-base.en-q5_1.bin"
     const val WHISPER_DIR = "whisper"
 
     var isAvailable: Boolean = false
         private set
+
+    @Volatile
+    private var loadedModel: WhisperModel? = null
 
     private val modelHandle = AtomicLong(0)
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
@@ -27,11 +29,13 @@ object WhisperEngine {
 
     fun isModelLoaded(): Boolean = modelHandle.get() != 0L
 
-    fun getModelFile(filesDir: File): File {
-        return File(filesDir, "$WHISPER_DIR/$MODEL_FILE_NAME")
+    fun getLoadedModel(): WhisperModel? = loadedModel
+
+    fun getModelFile(filesDir: File, model: WhisperModel): File {
+        return File(filesDir, "$WHISPER_DIR/${model.fileName}")
     }
 
-    fun loadModel(modelPath: String, callback: (Boolean) -> Unit) {
+    fun loadModel(modelPath: String, model: WhisperModel, callback: (Boolean) -> Unit) {
         if (!isAvailable) {
             callback(false)
             return
@@ -39,8 +43,19 @@ object WhisperEngine {
         executor.execute {
             val handle = loadModelNative(modelPath)
             modelHandle.set(handle)
+            loadedModel = if (handle != 0L) model else null
             callback(handle != 0L)
         }
+    }
+
+    fun reloadIfNeeded(filesDir: File, model: WhisperModel, callback: (Boolean) -> Unit) {
+        if (isModelLoaded() && loadedModel == model) {
+            callback(true)
+            return
+        }
+        releaseModel()
+        val modelFile = getModelFile(filesDir, model)
+        loadModel(modelFile.absolutePath, model, callback)
     }
 
     fun transcribe(audioData: FloatArray, callback: (String?) -> Unit) {
@@ -57,6 +72,7 @@ object WhisperEngine {
 
     fun releaseModel() {
         val handle = modelHandle.getAndSet(0)
+        loadedModel = null
         if (handle != 0L && isAvailable) {
             executor.execute {
                 releaseModelNative(handle)

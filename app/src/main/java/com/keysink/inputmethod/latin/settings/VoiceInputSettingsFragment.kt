@@ -4,15 +4,18 @@ import android.Manifest
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.preference.ListPreference
 import android.preference.Preference
 import com.keysink.inputmethod.R
 import com.keysink.inputmethod.latin.voice.ModelDownloadManager
+import com.keysink.inputmethod.latin.voice.WhisperModel
 
 class VoiceInputSettingsFragment : SubScreenFragment() {
 
     private var downloadManager: ModelDownloadManager? = null
     private var permissionPref: Preference? = null
     private var modelPref: Preference? = null
+    private var modelSelectorPref: ListPreference? = null
 
     override fun onCreate(icicle: Bundle?) {
         super.onCreate(icicle)
@@ -20,7 +23,9 @@ class VoiceInputSettingsFragment : SubScreenFragment() {
 
         permissionPref = findPreference("voice_permission_status")
         modelPref = findPreference("voice_model_status")
+        modelSelectorPref = findPreference(Settings.PREF_VOICE_MODEL) as? ListPreference
 
+        updateModelSelectorSummary()
         updatePermissionStatus()
         updateModelStatus()
 
@@ -37,8 +42,19 @@ class VoiceInputSettingsFragment : SubScreenFragment() {
 
     override fun onResume() {
         super.onResume()
+        updateModelSelectorSummary()
         updatePermissionStatus()
         updateModelStatus()
+    }
+
+    private fun getSelectedModel(): WhisperModel {
+        val id = modelSelectorPref?.value ?: WhisperModel.DEFAULT.id
+        return WhisperModel.fromId(id)
+    }
+
+    private fun updateModelSelectorSummary() {
+        val model = getSelectedModel()
+        modelSelectorPref?.summary = "${model.displayName} — ${model.displaySize}"
     }
 
     private fun updatePermissionStatus() {
@@ -52,11 +68,13 @@ class VoiceInputSettingsFragment : SubScreenFragment() {
 
     private fun updateModelStatus() {
         val filesDir = activity?.filesDir ?: return
-        val downloaded = ModelDownloadManager.isModelDownloaded(filesDir)
-        modelPref?.summary = getString(
-            if (downloaded) R.string.voice_pref_model_ready
-            else R.string.voice_pref_model_tap_download
-        )
+        val model = getSelectedModel()
+        val downloaded = ModelDownloadManager.isModelDownloaded(filesDir, model)
+        modelPref?.summary = if (downloaded) {
+            getString(R.string.voice_pref_model_ready)
+        } else {
+            getString(R.string.voice_pref_model_tap_download, model.displaySize)
+        }
     }
 
     private fun requestMicPermission() {
@@ -77,9 +95,10 @@ class VoiceInputSettingsFragment : SubScreenFragment() {
     private fun startModelDownload() {
         val filesDir = activity?.filesDir ?: return
         val ctx = activity ?: return
-        if (ModelDownloadManager.isModelDownloaded(filesDir)) return
+        val model = getSelectedModel()
+        if (ModelDownloadManager.isModelDownloaded(filesDir, model)) return
 
-        downloadManager = ModelDownloadManager()
+        downloadManager = ModelDownloadManager(model)
         modelPref?.summary = getString(R.string.voice_pref_model_downloading, 0)
 
         downloadManager?.download(ctx, filesDir, object : ModelDownloadManager.Callback {
@@ -98,7 +117,7 @@ class VoiceInputSettingsFragment : SubScreenFragment() {
                                 R.string.voice_pref_model_tap_retry, state.message)
                         }
                         is ModelDownloadManager.DownloadState.NotDownloaded -> {
-                            modelPref?.summary = getString(R.string.voice_pref_model_tap_download)
+                            updateModelStatus()
                         }
                     }
                 }
@@ -112,7 +131,10 @@ class VoiceInputSettingsFragment : SubScreenFragment() {
     }
 
     override fun onSharedPreferenceChanged(prefs: SharedPreferences?, key: String?) {
-        // No shared preferences to listen to in this fragment
+        if (key == Settings.PREF_VOICE_MODEL) {
+            updateModelSelectorSummary()
+            updateModelStatus()
+        }
     }
 
     companion object {
