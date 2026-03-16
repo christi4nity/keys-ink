@@ -28,6 +28,9 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -41,6 +44,7 @@ import java.util.WeakHashMap;
 import com.keysink.inputmethod.R;
 import com.keysink.inputmethod.keyboard.internal.DrawingPreviewPlacerView;
 import com.keysink.inputmethod.keyboard.internal.DrawingProxy;
+import com.keysink.inputmethod.keyboard.internal.KeyboardIconsSet;
 import com.keysink.inputmethod.keyboard.internal.KeyDrawParams;
 import com.keysink.inputmethod.keyboard.internal.KeyPreviewChoreographer;
 import com.keysink.inputmethod.keyboard.internal.KeyPreviewDrawParams;
@@ -57,6 +61,7 @@ import com.keysink.inputmethod.latin.utils.LocaleResourceUtils;
 import com.keysink.inputmethod.latin.SuggestedWords;
 import com.keysink.inputmethod.latin.suggestions.SuggestionStripView;
 import com.keysink.inputmethod.latin.utils.TypefaceUtils;
+import com.keysink.inputmethod.latin.voice.VoiceInputState;
 
 /**
  * A view that is responsible for detecting key presses and touch movements.
@@ -84,6 +89,22 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
     private final Paint mSuggestionBoldPaint;
     private final Paint mSeparatorPaint;
     private final float mSuggestionHorizontalPadding;
+
+    // --- Voice input status (drawn in suggestion strip area) ---
+    private VoiceInputState mVoiceInputState = VoiceInputState.IDLE;
+    private String mVoiceErrorMessage = null;
+    private int mDotAnimationCounter = 0;
+    private final Handler mDotAnimationHandler = new Handler(Looper.getMainLooper());
+    private final Runnable mDotAnimationRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mVoiceInputState.getShowsAnimatedDots()) {
+                mDotAnimationCounter = (mDotAnimationCounter + 1) % 3;
+                invalidate(0, 0, getWidth(), mSuggestionStripHeight);
+                mDotAnimationHandler.postDelayed(this, 1000);
+            }
+        }
+    };
 
     /** Listener for {@link KeyboardActionListener}. */
     private KeyboardActionListener mKeyboardActionListener;
@@ -263,6 +284,49 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         invalidate();
     }
 
+    // --- Voice input status ---
+
+    public VoiceInputState getVoiceInputState() {
+        return mVoiceInputState;
+    }
+
+    public void setVoiceInputState(final VoiceInputState state) {
+        setVoiceInputState(state, null);
+    }
+
+    public void setVoiceInputState(final VoiceInputState state, final String errorMessage) {
+        mVoiceInputState = state;
+        mVoiceErrorMessage = errorMessage;
+        mDotAnimationCounter = 0;
+        mDotAnimationHandler.removeCallbacks(mDotAnimationRunnable);
+
+        if (state.getShowsAnimatedDots()) {
+            mDotAnimationHandler.postDelayed(mDotAnimationRunnable, 1000);
+        }
+
+        if (state == VoiceInputState.ERROR && errorMessage != null) {
+            mDotAnimationHandler.postDelayed(() -> {
+                if (mVoiceInputState == VoiceInputState.ERROR) {
+                    mVoiceInputState = VoiceInputState.IDLE;
+                    mVoiceErrorMessage = null;
+                    invalidate(0, 0, getWidth(), mSuggestionStripHeight);
+                }
+            }, 3000);
+        }
+
+        // Invalidate the suggestion strip for status text
+        invalidate(0, 0, getWidth(), mSuggestionStripHeight);
+
+        // Invalidate the mic key so the icon swap (mic <-> stop) takes effect
+        final Keyboard keyboard = getKeyboard();
+        if (keyboard != null) {
+            final Key voiceKey = keyboard.getKey(Constants.CODE_VOICE_INPUT);
+            if (voiceKey != null) {
+                invalidateKey(voiceKey);
+            }
+        }
+    }
+
     // --- Drawing ---
 
     @Override
@@ -284,6 +348,14 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         canvas.clipRect(0, 0, width, stripHeight);
         canvas.drawColor(Color.WHITE);
 
+        // Voice status takes over the strip when active
+        if (mVoiceInputState.getHidesSuggestions()) {
+            drawVoiceStatus(canvas, width, stripHeight);
+            canvas.drawLine(0, stripHeight - 1, width, stripHeight - 1, mSeparatorPaint);
+            canvas.restore();
+            return;
+        }
+
         final SuggestedWords words = mSuggestedWords;
         if (words != null && !words.isEmpty() && words.size() > 0) {
             drawSuggestionWords(canvas, words, width, stripHeight);
@@ -292,6 +364,27 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         // Bottom separator line
         canvas.drawLine(0, stripHeight - 1, width, stripHeight - 1, mSeparatorPaint);
         canvas.restore();
+    }
+
+    private void drawVoiceStatus(final Canvas canvas, final int width, final int stripHeight) {
+        final float padding = mSuggestionHorizontalPadding;
+        final float textY = stripHeight / 2f + mSuggestionPaint.getTextSize() / 3f;
+
+        if (mVoiceInputState == VoiceInputState.ERROR && mVoiceErrorMessage != null) {
+            final float textWidth = mSuggestionPaint.measureText(mVoiceErrorMessage);
+            canvas.drawText(mVoiceErrorMessage, (width - textWidth) / 2f, textY, mSuggestionPaint);
+        } else {
+            final String statusText = mVoiceInputState.getStatusText();
+            if (statusText != null) {
+                final String dots;
+                switch (mDotAnimationCounter) {
+                    case 0: dots = "."; break;
+                    case 1: dots = ".."; break;
+                    default: dots = "..."; break;
+                }
+                canvas.drawText(statusText + dots, padding, textY, mSuggestionPaint);
+            }
+        }
     }
 
     private void drawSuggestionWords(final Canvas canvas, final SuggestedWords words,
@@ -587,6 +680,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        mDotAnimationHandler.removeCallbacks(mDotAnimationRunnable);
         mDrawingPreviewPlacerView.removeAllViews();
     }
 
@@ -738,6 +832,27 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
             final KeyDrawParams params) {
         if (key.altCodeWhileTyping()) {
             params.mAnimAlpha = mAltCodeKeyWhileTypingAnimAlpha;
+        }
+        // Swap mic icon to stop icon during recording
+        if (key.getCode() == Constants.CODE_VOICE_INPUT
+                && mVoiceInputState == VoiceInputState.RECORDING) {
+            final Keyboard keyboard = getKeyboard();
+            if (keyboard != null) {
+                final int stopIconId = KeyboardIconsSet.getIconId(
+                        KeyboardIconsSet.NAME_STOP_KEY);
+                final Drawable stopIcon = keyboard.mIconsSet.getIconDrawable(stopIconId);
+                if (stopIcon != null) {
+                    stopIcon.setAlpha(params.mAnimAlpha);
+                    final int keyWidth = key.getWidth();
+                    final int keyHeight = key.getHeight();
+                    final int iconWidth = Math.min(stopIcon.getIntrinsicWidth(), keyWidth);
+                    final int iconHeight = stopIcon.getIntrinsicHeight();
+                    final int iconX = (keyWidth - iconWidth) / 2;
+                    final int iconY = (keyHeight - iconHeight) / 2;
+                    drawIcon(canvas, stopIcon, iconX, iconY, iconWidth, iconHeight);
+                    return;
+                }
+            }
         }
         super.onDrawKeyTopVisuals(key, canvas, paint, params);
         final int code = key.getCode();
