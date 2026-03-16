@@ -384,6 +384,7 @@ public final class MainKeyboardView extends KeyboardView implements MoreKeysPane
         final float padding = mSuggestionHorizontalPadding;
         final float textY = stripHeight / 2f + mSuggestionPaint.getTextSize() / 3f;
 
+        mSuggestionPaint.setTextAlign(Align.LEFT);
         if (mVoiceInputState == VoiceInputState.ERROR && mVoiceErrorMessage != null) {
             final float textWidth = mSuggestionPaint.measureText(mVoiceErrorMessage);
             canvas.drawText(mVoiceErrorMessage, (width - textWidth) / 2f, textY, mSuggestionPaint);
