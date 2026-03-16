@@ -139,4 +139,9 @@
         latin:styleName="backFromMoreSymbolKeyStyle"
         latin:keySpec="!text/keylabel_to_symbol|!code/key_shift"
         latin:parentStyle="baseForLayoutSwitchKeyStyle" />
+    <key-style
+        latin:styleName="micKeyStyle"
+        latin:keySpec="!icon/mic_key|!code/key_voice_input"
+        latin:keyActionFlags="noKeyPreview"
+        latin:backgroundType="functional" />
 </merge>

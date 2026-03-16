@@ -36,6 +36,8 @@
             latin:backgroundType="normal" />
         <include
             latin:keyboardLayout="@xml/key_period" />
+        <include
+            latin:keyboardLayout="@xml/key_mic" />
         <Spacer
             latin:keyWidth="9%p" />
     </Row>
